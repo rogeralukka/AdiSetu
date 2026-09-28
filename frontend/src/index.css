@@ -1,0 +1,281 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --header-bg: #FFFFFF;
+  --text: #242220;
+  --muted: #84837D;
+  --border: #E6E6E1;
+  --accent: #C1622F;
+  --accent-soft: #F3E3D8;
+  --accent-dark: #8A431E;
+  --green: #4B7F52;
+  --green-soft: #E3EEE1;
+  --amber: #B4790E;
+  --amber-soft: #F7E8CE;
+  --rust: #A13324;
+  --rust-soft: #F5E1DC;
+  --rust-dark: #8A3222;
+  --teal: #3D6B6B;
+  --teal-soft: #DCEAEA;
+  --teal-dark: #2A4F4F;
+  --gold: #9C7A1E;
+  --gold-soft: #F2E8C9;
+  --gold-dark: #5E4A0F;
+  --blue-soft: #DCEEF9;
+  --blue-dark: #1F5A8C;
+}
+
+.dark {
+  --bg: #0A0A0A;
+  --surface: #1A1A1A;
+  --header-bg: #1A1A1A;
+  --text: #F5F5F2;
+  --muted: #9E9D97;
+  --border: #2A2A28;
+  --accent: #D6743D;
+  --accent-soft: #38251C;
+  --accent-dark: #F3E3D8;
+  --green: #5C9A65;
+  --green-soft: #1E2D20;
+  --amber: #C98B1A;
+  --amber-soft: #382B14;
+  --rust: #B84333;
+  --rust-soft: #361F1B;
+  --rust-dark: #F5E1DC;
+  --teal: #5BA4A4;
+  --teal-soft: #1F3232;
+  --teal-dark: #DCEAEA;
+  --gold: #C29929;
+  --gold-soft: #302812;
+  --gold-dark: #F2E8C9;
+  --blue-soft: #1A334A;
+  --blue-dark: #DCEEF9;
+}
+
+@layer utilities {
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Window itself never scrolls (Rev 96) */
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Page Scroll Wrapper (Rev 96): Dedicated single scroll container per page */
+.page-scroll-wrapper {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+
+.page-scroll-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.page-scroll-wrapper::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.page-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 999px;
+  opacity: 0.5;
+}
+
+.page-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--text);
+  opacity: 0.8;
+}
+
+.page-scroll-wrapper::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Fixed full-height scroll wrappers (Rev 99: both span from top nav to bottom: 0)
+   Content scrolls full height to bottom: 0; the floating pill nav sits on top softened by fade mask. */
+.page-scroll-wrapper-with-nav,
+.page-scroll-wrapper-no-nav {
+  position: fixed;
+  top: 64px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+/* Slim custom scrollbar for dropdown menus & inner scrollable elements */
+.thin-scroll,
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+  overscroll-behavior: contain;
+}
+
+.thin-scroll::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thin-scroll::-webkit-scrollbar-button,
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.thin-scroll::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 999px;
+  opacity: 0.5;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text);
+  opacity: 0.8;
+}
+
+/* Floating bottom nav pill elevation */
+.floating-nav-pill {
+  box-shadow: 0 1px 3px rgba(20, 20, 15, 0.08), 0 8px 24px rgba(20, 20, 15, 0.12);
+}
+
+.dark .floating-nav-pill {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Bottom nav true capsule: height 56px, border-radius 28px (half height), tight 16px end-padding matching inter-tab gap */
+.bottom-nav {
+  height: 56px;
+  border-radius: 28px;
+  padding: 0 16px;
+}
+
+/* Scroll-aware top fade mask: invisible at rest, fades in smoothly on scroll */
+.fade-mask {
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.fade-mask.visible {
+  opacity: 1;
+}
+
+/* Page Title Block Typography and Spacing (Rev 82) */
+.page-title {
+  font-family: 'Work Sans', sans-serif;
+  font-weight: 700;
+  font-size: 27px;
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+
+.page-subtitle {
+  font-family: 'Work Sans', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.page-header {
+  margin-bottom: 26px;
+}
+
+/* ==========================================================================
+   Google Translate Headless Integration (Rev 104 v5)
+   Hide default banner, toolbar, gadgets, tooltips, & container iframes
+   ========================================================================== */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+iframe.goog-te-banner-frame,
+iframe.skiptranslate,
+iframe[id^=":"],
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-OR9hGd-ibnC6b,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-yAWNEb-L7lbkb {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+.goog-te-gadget-icon {
+  display: none !important;
+}
+
+#google_translate_element {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+
+

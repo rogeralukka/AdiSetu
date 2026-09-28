@@ -1,0 +1,28 @@
+# Dependencies and Build Artifacts
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/*.local
+
+# Logs
+**/logs/
+**/*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / QA scratch files
+**/scratch/
+**/qa-screenshots/
+
+# Editor and OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
