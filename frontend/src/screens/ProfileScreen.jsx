@@ -61,7 +61,7 @@ export default function ProfileScreen() {
         </div>
         {/* Profile Header Card */}
         <div className="bg-surface rounded-card p-5 shadow-card border-0 dark:border dark:border-border/40 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-accent-soft text-accent-dark font-bold text-lg flex items-center justify-center border border-border flex-shrink-0">
+          <div className="w-14 h-14 rounded-full bg-accent-soft text-accent-dark font-bold text-lg flex items-center justify-center border border-border flex-shrink-0 notranslate" translate="no">
             {currentStudent.initials}
           </div>
 
@@ -163,7 +163,7 @@ export default function ProfileScreen() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-surface shadow-xs text-text font-bold text-xs flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-surface shadow-xs text-text font-bold text-xs flex items-center justify-center notranslate" translate="no">
                       {student.initials}
                     </div>
                     <div className="text-left">

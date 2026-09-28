@@ -368,10 +368,10 @@ export default function AdminDashboardScreen() {
                 type="button"
                 aria-label="Change language"
                 onClick={() => setShowLangDropdown(!showLangDropdown)}
-                className="h-8 px-3.5 flex items-center gap-1.5 rounded-full bg-[#ECEAE4] dark:bg-[#262626] hover:bg-[#E0DDD5] dark:hover:bg-[#323232] hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 ease-out text-text select-none border-0 outline-none shadow-xs"
+                className="h-8 px-3.5 flex items-center gap-1.5 rounded-full bg-[#ECEAE4] dark:bg-[#262626] hover:bg-[#E0DDD5] dark:hover:bg-[#323232] hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 ease-out text-text select-none border-0 outline-none shadow-xs notranslate"
               >
                 <Globe size={14} className="text-text/75" />
-                <span className="font-mono text-xs font-semibold tracking-wider text-text">
+                <span className="font-mono text-xs font-semibold tracking-wider text-text notranslate" translate="no">
                   {language.toUpperCase()}
                 </span>
               </button>
@@ -415,7 +415,8 @@ export default function AdminDashboardScreen() {
                 type="button"
                 aria-label="Open officer profile menu"
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-accent-soft text-accent-dark font-bold text-xs hover:bg-accent-soft/80 active:scale-95 transition-all duration-200 ease-out select-none border-0 outline-none shadow-xs"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-accent-soft text-accent-dark font-bold text-xs hover:bg-accent-soft/80 active:scale-95 transition-all duration-200 ease-out select-none border-0 outline-none shadow-xs notranslate"
+                translate="no"
               >
                 {currentOfficer.avatar}
               </button>

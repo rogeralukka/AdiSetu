@@ -187,7 +187,7 @@ export default function ProfileDropdown() {
               className="w-full px-4 py-3 text-left hover:bg-bg/60 transition-colors flex items-center justify-between border-b border-border"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent-soft text-accent-dark font-bold text-sm flex items-center justify-center border border-border">
+                <div className="w-10 h-10 rounded-full bg-accent-soft text-accent-dark font-bold text-sm flex items-center justify-center border border-border notranslate" translate="no">
                   {currentStudent.initials}
                 </div>
                 <div className="overflow-hidden">
@@ -225,7 +225,7 @@ export default function ProfileDropdown() {
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <div className="w-6 h-6 rounded-full bg-border text-text font-bold text-[10px] flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-border text-text font-bold text-[10px] flex items-center justify-center notranslate" translate="no">
                           {student.initials}
                         </div>
                         <div className="truncate text-left">
