@@ -214,7 +214,7 @@ export default function LandingScreen() {
         <div className="w-full h-full px-5 flex items-center justify-between">
           {/* Left: AdiSetu wordmark lockup matching in-app top bar */}
           <div className="text-xl font-bold tracking-tight text-text select-none notranslate" translate="no">
-            {t('appName')}
+            AdiSetu
           </div>
 
           {/* Right: Theme toggle & Language dropdown (~16px gap, 20px right padding) */}

@@ -1,13 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
 import { useScrolled } from '../hooks/useScrolled';
 import ProfileDropdown from './ProfileDropdown';
 import { ArrowLeft } from 'lucide-react';
 
 export default function TopBar({ title, isWordmark = true, showBack = false, backUrl }) {
   const navigate = useNavigate();
-  const { t } = useApp();
   const scrolled = useScrolled(6);
 
   return (
@@ -29,7 +27,7 @@ export default function TopBar({ title, isWordmark = true, showBack = false, bac
 
             {isWordmark ? (
               <div className="text-xl font-bold tracking-tight text-text select-none notranslate" translate="no">
-                {t('appName')}
+                AdiSetu
               </div>
             ) : (
               <h1 className="text-lg font-bold tracking-tight text-text">
