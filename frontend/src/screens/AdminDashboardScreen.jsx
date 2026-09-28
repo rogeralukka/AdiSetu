@@ -338,7 +338,7 @@ export default function AdminDashboardScreen() {
         <div className="w-full h-full px-5 flex items-center justify-between">
           {/* Left: Wordmark lockup */}
           <div className="flex items-center gap-2 select-none">
-            <span className="text-xl font-bold tracking-tight text-text">
+            <span className="text-2xl font-extrabold tracking-tight text-accent notranslate" translate="no">
               AdiSetu
             </span>
             <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-accent-soft text-accent-dark uppercase tracking-wider">
