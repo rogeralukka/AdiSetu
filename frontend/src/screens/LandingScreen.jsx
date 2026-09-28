@@ -213,7 +213,7 @@ export default function LandingScreen() {
       <header className="fixed top-0 left-0 right-0 z-40 w-full h-16 bg-surface shadow-[0_2px_8px_rgba(20,20,15,0.06)] dark:shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-colors">
         <div className="w-full h-full px-5 flex items-center justify-between">
           {/* Left: AdiSetu wordmark lockup matching in-app top bar */}
-          <div className="text-xl font-extrabold tracking-tight text-accent select-none notranslate" translate="no">
+          <div className="text-2xl font-extrabold tracking-tight text-accent select-none notranslate" translate="no">
             AdiSetu
           </div>
 

@@ -26,7 +26,7 @@ export default function TopBar({ title, isWordmark = true, showBack = false, bac
             )}
 
             {isWordmark ? (
-              <div className="text-xl font-extrabold tracking-tight text-accent select-none notranslate" translate="no">
+              <div className="text-2xl font-extrabold tracking-tight text-accent select-none notranslate" translate="no">
                 AdiSetu
               </div>
             ) : (
