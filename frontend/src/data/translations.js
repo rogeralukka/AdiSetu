@@ -1,11 +1,6 @@
 import hiDict from './locales/hi.js';
 import orDict from './locales/or.js';
 import satDict from './locales/sat.js';
-import gonDict from './locales/gon.js';
-import unrDict from './locales/unr.js';
-import kruDict from './locales/kru.js';
-import hocDict from './locales/hoc.js';
-import bhbDict from './locales/bhb.js';
 
 export const languages = [
   {
@@ -77,31 +72,6 @@ export const languages = [
     "code": "sat",
     "name": "Santali (Ol Chiki)",
     "native": "ᱥᱟᱱᱛᱟᱲᱤ"
-  },
-  {
-    "code": "gon",
-    "name": "Gondi",
-    "native": "ᱜᱳᱸᱰᱤ (Gondi)"
-  },
-  {
-    "code": "unr",
-    "name": "Mundari",
-    "native": "ᱢᱩᱱᱰᱟᱨᱤ (Mundari)"
-  },
-  {
-    "code": "kru",
-    "name": "Kurukh (Oraon)",
-    "native": "ᱠᱩᱲᱩᱠᱷ (Kurukh)"
-  },
-  {
-    "code": "hoc",
-    "name": "Ho",
-    "native": "ᱦᱳ (Ho)"
-  },
-  {
-    "code": "bhb",
-    "name": "Bhili",
-    "native": "भीली (Bhili)"
   }
 ];
 
@@ -254,12 +224,7 @@ export const localeLoaders = {
   ml: () => import('./locales/ml.js'),
   pa: () => import('./locales/pa.js'),
   as: () => import('./locales/as.js'),
-  sat: () => Promise.resolve(satDict),
-  gon: () => Promise.resolve(gonDict),
-  unr: () => Promise.resolve(unrDict),
-  kru: () => Promise.resolve(kruDict),
-  hoc: () => Promise.resolve(hocDict),
-  bhb: () => Promise.resolve(bhbDict)
+  sat: () => Promise.resolve(satDict)
 };
 
 // In-memory cache for loaded locale dictionaries
@@ -268,11 +233,6 @@ const localeCache = {
   hi: hiDict,
   or: orDict,
   sat: satDict,
-  gon: gonDict,
-  unr: unrDict,
-  kru: kruDict,
-  hoc: hocDict,
-  bhb: bhbDict,
 };
 
 /**
@@ -305,11 +265,6 @@ export const translations = {
   hi: hiDict,
   or: orDict,
   sat: satDict,
-  gon: gonDict,
-  unr: unrDict,
-  kru: kruDict,
-  hoc: hocDict,
-  bhb: bhbDict,
 };
 
 export const getTranslatedStatus = (status, t) => {
