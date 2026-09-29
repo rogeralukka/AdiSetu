@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useScrollDirection } from '../hooks/useScrollDirection';
@@ -19,6 +19,25 @@ export default function SchemesScreen() {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const hidden = useScrollDirection();
   const scrolled = useScrolled(6);
+
+  // AdiSetu Advisor run state: idle -> running (steps tick one by one) -> done (ranking revealed)
+  const [advisor, setAdvisor] = useState({ phase: 'idle', step: 0 });
+  const [barsIn, setBarsIn] = useState(false);
+  const ADVISOR_STEPS = 4;
+  useEffect(() => {
+    if (advisor.phase !== 'running') return undefined;
+    const delay = advisor.step >= ADVISOR_STEPS ? 600 : 750;
+    const timer = setTimeout(() => {
+      setAdvisor((a) => (a.step >= ADVISOR_STEPS ? { phase: 'done', step: a.step } : { ...a, step: a.step + 1 }));
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [advisor]);
+  useEffect(() => {
+    if (advisor.phase !== 'done') { setBarsIn(false); return undefined; }
+    const timer = setTimeout(() => setBarsIn(true), 60);
+    return () => clearTimeout(timer);
+  }, [advisor.phase]);
+  const runAdvisor = () => setAdvisor({ phase: 'running', step: 0 });
 
   const filterOptions = [
     'All',
@@ -146,76 +165,153 @@ export default function SchemesScreen() {
 
       {/* Main Content Area: Scheme Cards List scrolling smoothly underneath */}
       <main className="max-w-md mx-auto px-4 pt-4 pb-40 space-y-4">
-        {/* AdiSetu Advisor: ranks the schemes the student qualifies for and recommends the best one
-            (a student can avail only one scheme at a time) */}
-        {recommendation && !searchQuery && (
-          <section
-            aria-label="Best scheme combination"
-            className="bg-accent-soft rounded-card p-4 shadow-xs"
-          >
-            <div className="flex items-center gap-1.5 text-accent-dark">
-              <Sparkles size={14} />
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">AdiSetu Advisor</span>
-              <span className="ml-auto rounded-full bg-white/70 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted">Sample values</span>
-            </div>
-            <p className="text-sm font-bold text-text mt-1.5 leading-snug">
-              {recommendation.newIds.length === 0
-                ? `You're already on the best option for ${currentStudent?.name?.split(' ')[0]}`
-                : `Best option for ${currentStudent?.name?.split(' ')[0]}: ${nameOf(recommendation.ids[0])}`}
-            </p>
-            <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-              Compared {recommendation.considered} {recommendation.category} schemes you qualify for. Only one scheme can be held at a time.
-            </p>
+        {/* AdiSetu Advisor: the student taps "Find my best scheme", the Advisor visibly works through its
+            steps, reveals the ranking, and one tap selects the winner into the batch bar.
+            (Rule-based and deterministic; a student can avail only one scheme at a time.) */}
+        {recommendation && !searchQuery && (() => {
+          const firstName = currentStudent?.name?.split(' ')[0];
+          const bestId = recommendation.ids[0];
+          const bestSelected = selectedSchemeIds.includes(bestId);
+          const steps = [
+            `Reading your profile: Class ${currentStudent?.class}, ${recommendation.category} level`,
+            `Checking eligibility across ${schemes.length} schemes: ${recommendation.considered} match you`,
+            'Applying the rule: only one scheme at a time',
+            'Ranking the matches by annual benefit',
+          ];
+          return (
+            <section
+              aria-label="Best scheme combination"
+              className="bg-accent-soft rounded-card p-4 shadow-xs"
+            >
+              <div className="flex items-center gap-1.5 text-accent-dark">
+                <Sparkles size={14} />
+                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">AdiSetu Advisor</span>
+                <span className="ml-auto rounded-full bg-white/70 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted">Sample values</span>
+              </div>
 
-            <ul className="mt-2.5 space-y-2" data-testid="advisor-ranking">
-              {recommendation.ranked.map((r, i) => {
-                const isBest = recommendation.ids.includes(r.id);
-                const pct = Math.max(6, Math.round((r.value / recommendation.ranked[0].value) * 100));
-                return (
-                  <li key={r.id}>
-                    <div className="flex items-center gap-1.5 text-xs">
-                      {isBest ? (
-                        <Check size={12} className="text-accent-dark flex-shrink-0" />
-                      ) : (
-                        <span className="w-3 text-[10px] font-mono text-muted flex-shrink-0">{i + 1}</span>
-                      )}
-                      <span className={`truncate ${isBest ? 'font-bold text-text' : 'text-muted'}`}>
-                        {nameOf(r.id)}
-                        {isBest && recommendation.appliedIn.includes(r.id) && (
-                          <span className="font-normal text-muted"> (already applied)</span>
-                        )}
-                      </span>
-                      <span className={`ml-auto flex-shrink-0 font-mono ${isBest ? 'font-bold text-accent-dark' : 'text-muted'}`}>
-                        {formatINR(r.value)}/yr
-                      </span>
-                    </div>
-                    <div className="mt-1 ml-[18px] h-1.5 rounded-full bg-white/70 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${isBest ? 'bg-accent' : 'bg-muted/40'}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+              {advisor.phase === 'idle' && (
+                <>
+                  <p className="text-sm font-bold text-text mt-1.5 leading-snug">
+                    Not sure which scheme to apply for, {firstName}?
+                  </p>
+                  <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
+                    The Advisor compares every scheme you qualify for and finds the best one. A student can avail only one scheme at a time.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={runAdvisor}
+                    className="mt-3 h-9 px-4 rounded-full bg-accent text-white text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform"
+                  >
+                    <Sparkles size={13} />
+                    <span>Find my best scheme</span>
+                  </button>
+                </>
+              )}
 
-            {recommendation.margin > 0 && (
-              <p className="text-[11px] text-muted mt-2.5 leading-relaxed">
-                Beats the next best option by <span className="font-semibold text-text">{formatINR(recommendation.margin)}/year</span>. Values are indicative sample figures.
-              </p>
-            )}
-            {recommendation.newIds.length > 0 && (
-              <button
-                type="button"
-                onClick={selectRecommended}
-                className="mt-2.5 h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
-              >
-                Select best option
-              </button>
-            )}
-          </section>
-        )}
+              {advisor.phase === 'running' && (
+                <>
+                  <p className="text-sm font-bold text-text mt-1.5 leading-snug">Finding the best scheme for {firstName}…</p>
+                  <ul className="mt-2.5 space-y-1.5" data-testid="advisor-steps">
+                    {steps.map((label, i) => {
+                      const done = i < advisor.step;
+                      const active = i === advisor.step;
+                      return (
+                        <li key={label} className={`flex items-start gap-2 text-xs ${done || active ? 'text-text' : 'text-muted/60'}`}>
+                          <span className="mt-0.5 w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">
+                            {done ? (
+                              <Check size={13} className="text-accent-dark" strokeWidth={3} />
+                            ) : active ? (
+                              <span className="block w-3 h-3 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+                            ) : (
+                              <span className="block w-1.5 h-1.5 rounded-full bg-muted/40" />
+                            )}
+                          </span>
+                          <span className={done ? '' : active ? 'font-semibold' : ''}>{label}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
+
+              {advisor.phase === 'done' && (
+                <>
+                  <p className="text-sm font-bold text-text mt-1.5 leading-snug">
+                    {recommendation.newIds.length === 0
+                      ? `You're already on the best option for ${firstName}`
+                      : `Best option for ${firstName}: ${nameOf(bestId)}`}
+                  </p>
+                  <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
+                    Compared {recommendation.considered} {recommendation.category} schemes you qualify for. Only one scheme can be held at a time.
+                  </p>
+
+                  <ul className="mt-2.5 space-y-2" data-testid="advisor-ranking">
+                    {recommendation.ranked.map((r, i) => {
+                      const isBest = recommendation.ids.includes(r.id);
+                      const pct = Math.max(6, Math.round((r.value / recommendation.ranked[0].value) * 100));
+                      return (
+                        <li key={r.id}>
+                          <div className="flex items-center gap-1.5 text-xs">
+                            {isBest ? (
+                              <Check size={12} className="text-accent-dark flex-shrink-0" />
+                            ) : (
+                              <span className="w-3 text-[10px] font-mono text-muted flex-shrink-0">{i + 1}</span>
+                            )}
+                            <span className={`truncate ${isBest ? 'font-bold text-text' : 'text-muted'}`}>
+                              {nameOf(r.id)}
+                              {isBest && recommendation.appliedIn.includes(r.id) && (
+                                <span className="font-normal text-muted"> (already applied)</span>
+                              )}
+                            </span>
+                            <span className={`ml-auto flex-shrink-0 font-mono ${isBest ? 'font-bold text-accent-dark' : 'text-muted'}`}>
+                              {formatINR(r.value)}/yr
+                            </span>
+                          </div>
+                          <div className="mt-1 ml-[18px] h-1.5 rounded-full bg-white/70 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${isBest ? 'bg-accent' : 'bg-muted/40'}`}
+                              style={{ width: barsIn ? `${pct}%` : '0%', transition: 'width 700ms ease-out', transitionDelay: `${i * 120}ms` }}
+                            />
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {recommendation.margin > 0 && (
+                    <p className="text-[11px] text-muted mt-2.5 leading-relaxed">
+                      Beats the next best option by <span className="font-semibold text-text">{formatINR(recommendation.margin)}/year</span>. Values are indicative sample figures.
+                    </p>
+                  )}
+
+                  <div className="mt-2.5 flex items-center gap-3">
+                    {recommendation.newIds.length > 0 && !bestSelected && (
+                      <button
+                        type="button"
+                        onClick={selectRecommended}
+                        className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
+                      >
+                        Select best option
+                      </button>
+                    )}
+                    {recommendation.newIds.length > 0 && bestSelected && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-accent-dark">
+                        <Check size={13} strokeWidth={3} /> Selected. Tap Review &amp; apply below.
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={runAdvisor}
+                      className="text-[11px] font-semibold text-muted underline underline-offset-2 active:opacity-70"
+                    >
+                      Run again
+                    </button>
+                  </div>
+                </>
+              )}
+            </section>
+          );
+        })()}
 
         {/* Recommended for you Section */}
         <div>
