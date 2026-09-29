@@ -1,22 +1,20 @@
-// Scheme combination rules + "AdiSetu Advisor" (rule-based, deterministic).
+// Scheme rules + "AdiSetu Advisor" (rule-based, deterministic).
 //
-// PROTOTYPE RULES: these encode the single-benefit principle (a student generally cannot
-// hold two scholarships of the same level, or scholarships from different levels, at the same time).
-// They are meant to be configured by the Super Admin (Eligibility Criteria tab) and MUST be
-// confirmed against current MoTA guidelines before production. Values are INDICATIVE sample
-// figures used only to rank options in the prototype - not official amounts.
+// PROTOTYPE RULE: the problem statement notes that a student can avail only ONE scholarship/fellowship
+// scheme at a time, so every pair of schemes conflicts by default. The rule set is meant to be configured by
+// the Super Admin (Eligibility Criteria tab) and confirmed against current MoTA guidelines before production.
+// Values are INDICATIVE sample figures used only to rank options in the prototype - not official amounts.
 
 // value      = indicative annual benefit in INR (sample data)
-// stackable  = a supplementary grant/award that may be held alongside one main scholarship of the same level
 // state      = only for residents of that state (omit = central scheme)
 // requiresInstitution / requiresTribeGroup = extra eligibility conditions
 export const SCHEME_META = {
   // Pre-Matric
   pre: { value: 8000 },
-  'pre-odisha': { value: 5000, state: 'Odisha', stackable: true },
+  'pre-odisha': { value: 5000, state: 'Odisha' },
   'pre-jharkhand': { value: 4500, state: 'Jharkhand' },
-  'pre-emrs': { value: 6000, stackable: true, requiresInstitution: 'Eklavya' },
-  'pre-pvtg': { value: 10500, stackable: true, requiresTribeGroup: 'PVTG' },
+  'pre-emrs': { value: 6000, requiresInstitution: 'Eklavya' },
+  'pre-pvtg': { value: 10500, requiresTribeGroup: 'PVTG' },
   'pre-mp': { value: 4000, state: 'Madhya Pradesh' },
   // Post-Matric
   pm: { value: 45000 },
@@ -45,14 +43,14 @@ export const SCHEME_META = {
 
 export const RULES = {
   sameLevel: {
-    id: 'same-level',
-    label: 'One scholarship per level',
-    text: 'Only one main scholarship of the same level can be held at a time.',
+    id: 'one-at-a-time',
+    label: 'One scheme at a time',
+    text: 'A student can avail only one scholarship/fellowship scheme at a time.',
   },
   crossLevel: {
-    id: 'cross-level',
-    label: 'One level at a time',
-    text: 'Scholarships for different education levels cannot be held together.',
+    id: 'one-at-a-time',
+    label: 'One scheme at a time',
+    text: 'A student can avail only one scholarship/fellowship scheme at a time.',
   },
 };
 
@@ -72,7 +70,6 @@ export function findConflict(aId, bId, schemes) {
   if (a.category !== b.category) {
     return { rule: RULES.crossLevel, message: RULES.crossLevel.text };
   }
-  if (meta(aId).stackable || meta(bId).stackable) return null;
   return { rule: RULES.sameLevel, message: RULES.sameLevel.text };
 }
 
@@ -140,7 +137,12 @@ export function recommendBundle(student, schemes, appliedIds = []) {
     if (value > best.value) best = { ids, value };
   }
   if (best.ids.length === 0) return null;
+  const ranked = candidates
+    .map((c) => ({ id: c.id, value: meta(c.id).value }))
+    .sort((a, b) => b.value - a.value);
+  const runnerUp = ranked.find((r) => !best.ids.includes(r.id)) || null;
+  const margin = runnerUp ? best.value - runnerUp.value : null;
   const newIds = best.ids.filter((id) => !appliedIds.includes(id));
   const appliedIn = best.ids.filter((id) => appliedIds.includes(id));
-  return { ...best, newIds, appliedIn, category, considered: candidates.length };
+  return { ...best, newIds, appliedIn, category, considered: candidates.length, ranked, runnerUp, margin };
 }

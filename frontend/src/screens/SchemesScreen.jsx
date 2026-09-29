@@ -146,7 +146,8 @@ export default function SchemesScreen() {
 
       {/* Main Content Area: Scheme Cards List scrolling smoothly underneath */}
       <main className="max-w-md mx-auto px-4 pt-4 pb-40 space-y-4">
-        {/* AdiSetu Advisor: best combination of schemes that can be held together */}
+        {/* AdiSetu Advisor: ranks the schemes the student qualifies for and recommends the best one
+            (a student can avail only one scheme at a time) */}
         {recommendation && !searchQuery && (
           <section
             aria-label="Best scheme combination"
@@ -159,33 +160,58 @@ export default function SchemesScreen() {
             </div>
             <p className="text-sm font-bold text-text mt-1.5 leading-snug">
               {recommendation.newIds.length === 0
-                ? `You're already on the best option: ${formatINR(recommendation.value)}/year`
-                : `Best combination for ${currentStudent?.name?.split(' ')[0]}: ${formatINR(recommendation.value)}/year`}
+                ? `You're already on the best option for ${currentStudent?.name?.split(' ')[0]}`
+                : `Best option for ${currentStudent?.name?.split(' ')[0]}: ${nameOf(recommendation.ids[0])}`}
             </p>
-            <ul className="mt-1.5 space-y-0.5">
-              {recommendation.ids.map((id) => (
-                <li key={id} className="text-xs text-text flex items-center gap-1.5">
-                  <Check size={12} className="text-accent-dark flex-shrink-0" />
-                  <span className="truncate">
-                    {nameOf(id)}
-                    {recommendation.appliedIn.includes(id) && (
-                      <span className="text-muted"> (already applied)</span>
-                    )}
-                  </span>
-                </li>
-              ))}
+            <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
+              Compared {recommendation.considered} {recommendation.category} schemes you qualify for. Only one scheme can be held at a time.
+            </p>
+
+            <ul className="mt-2.5 space-y-2" data-testid="advisor-ranking">
+              {recommendation.ranked.map((r, i) => {
+                const isBest = recommendation.ids.includes(r.id);
+                const pct = Math.max(6, Math.round((r.value / recommendation.ranked[0].value) * 100));
+                return (
+                  <li key={r.id}>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      {isBest ? (
+                        <Check size={12} className="text-accent-dark flex-shrink-0" />
+                      ) : (
+                        <span className="w-3 text-[10px] font-mono text-muted flex-shrink-0">{i + 1}</span>
+                      )}
+                      <span className={`truncate ${isBest ? 'font-bold text-text' : 'text-muted'}`}>
+                        {nameOf(r.id)}
+                        {isBest && recommendation.appliedIn.includes(r.id) && (
+                          <span className="font-normal text-muted"> (already applied)</span>
+                        )}
+                      </span>
+                      <span className={`ml-auto flex-shrink-0 font-mono ${isBest ? 'font-bold text-accent-dark' : 'text-muted'}`}>
+                        {formatINR(r.value)}/yr
+                      </span>
+                    </div>
+                    <div className="mt-1 ml-[18px] h-1.5 rounded-full bg-white/70 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${isBest ? 'bg-accent' : 'bg-muted/40'}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
-            <p className="text-[11px] text-muted mt-2 leading-relaxed">
-              Compared {recommendation.considered} {recommendation.category} schemes you qualify for, keeping only
-              combinations that can be held together. Values are indicative sample figures.
-            </p>
+
+            {recommendation.margin > 0 && (
+              <p className="text-[11px] text-muted mt-2.5 leading-relaxed">
+                Beats the next best option by <span className="font-semibold text-text">{formatINR(recommendation.margin)}/year</span>. Values are indicative sample figures.
+              </p>
+            )}
             {recommendation.newIds.length > 0 && (
               <button
                 type="button"
                 onClick={selectRecommended}
                 className="mt-2.5 h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
               >
-                Select {recommendation.appliedIn.length > 0 ? 'the new ones' : 'these'}
+                Select best option
               </button>
             )}
           </section>
