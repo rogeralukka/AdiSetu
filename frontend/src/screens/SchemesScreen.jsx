@@ -9,7 +9,7 @@ import BottomNav from '../components/BottomNav';
 import ChatSheet from '../components/ChatSheet';
 import ApplyModal from '../components/ApplyModal';
 import { Search, Check, ArrowRight, Sparkles, Ban } from 'lucide-react';
-import { conflictWith, recommendBundle, bundleValue, formatINR } from '../data/schemeRules';
+import { conflictWith, recommendPackages, bundleValue, formatINR, kindOf, componentsOf, valueOf } from '../data/schemeRules';
 
 export default function SchemesScreen() {
   const navigate = useNavigate();
@@ -22,7 +22,6 @@ export default function SchemesScreen() {
 
   // AdiSetu Advisor run state: idle -> running (steps tick one by one) -> done (ranking revealed)
   const [advisor, setAdvisor] = useState({ phase: 'idle', step: 0 });
-  const [barsIn, setBarsIn] = useState(false);
   const ADVISOR_STEPS = 4;
   useEffect(() => {
     if (advisor.phase !== 'running') return undefined;
@@ -32,11 +31,6 @@ export default function SchemesScreen() {
     }, delay);
     return () => clearTimeout(timer);
   }, [advisor]);
-  useEffect(() => {
-    if (advisor.phase !== 'done') { setBarsIn(false); return undefined; }
-    const timer = setTimeout(() => setBarsIn(true), 60);
-    return () => clearTimeout(timer);
-  }, [advisor.phase]);
   const runAdvisor = () => setAdvisor({ phase: 'running', step: 0 });
 
   const filterOptions = [
@@ -66,11 +60,12 @@ export default function SchemesScreen() {
   const unappliedSchemes = schemes.filter((scheme) => !appliedSchemeIds.includes(scheme.id));
 
   // AdiSetu Advisor: best valid combination for this student (rule-based, deterministic)
-  const recommendation = recommendBundle(currentStudent, schemes, appliedSchemeIds);
+  const recommendation = recommendPackages(currentStudent, schemes, appliedSchemeIds);
   const nameOf = (id) => {
     const sc = schemes.find((x) => x.id === id);
     return sc ? sc.shortName || sc.name : id;
   };
+  // Ticks every scheme in the recommended package into the batch selection
   const selectRecommended = () => {
     clearSchemeSelection();
     recommendation.newIds.forEach((id) => toggleSchemeSelection(id));
@@ -165,24 +160,22 @@ export default function SchemesScreen() {
 
       {/* Main Content Area: Scheme Cards List scrolling smoothly underneath */}
       <main className="max-w-md mx-auto px-4 pt-4 pb-40 space-y-4">
-        {/* AdiSetu Advisor: the student taps "Find my best scheme", the Advisor visibly works through its
-            steps, reveals the ranking, and one tap selects the winner into the batch bar.
-            (Rule-based and deterministic; a student can avail only one scheme at a time.) */}
+        {/* AdiSetu Advisor: builds every valid package (one scholarship + the add-on grants the student
+            qualifies for), totals the annual benefit of each, and recommends the highest-value package.
+            Rule-based and deterministic. Figures are indicative sample values. */}
         {recommendation && !searchQuery && (() => {
           const firstName = currentStudent?.name?.split(' ')[0];
-          const bestId = recommendation.ids[0];
-          const bestSelected = selectedSchemeIds.includes(bestId);
+          const best = recommendation.best;
+          const runnerUp = recommendation.runnerUp;
+          const allSelected = best.ids.every((id) => selectedSchemeIds.includes(id) || recommendation.appliedIn.includes(id));
           const steps = [
             `Reading your profile: Class ${currentStudent?.class}, ${recommendation.category} level`,
-            `Checking eligibility across ${schemes.length} schemes: ${recommendation.considered} match you`,
-            'Applying the rule: only one scheme at a time',
-            'Ranking the matches by annual benefit',
+            `${recommendation.considered} of ${schemes.length} schemes match you: ${recommendation.scholarshipCount} scholarships, ${recommendation.addonCount} add-on grants`,
+            'Building packages: one scholarship + every add-on you qualify for',
+            `Comparing ${recommendation.packages.length} valid packages by total annual benefit`,
           ];
           return (
-            <section
-              aria-label="Best scheme combination"
-              className="bg-accent-soft rounded-card p-4 shadow-xs"
-            >
+            <section aria-label="Best scheme combination" className="bg-accent-soft rounded-card p-4 shadow-xs">
               <div className="flex items-center gap-1.5 text-accent-dark">
                 <Sparkles size={14} />
                 <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">AdiSetu Advisor</span>
@@ -192,10 +185,11 @@ export default function SchemesScreen() {
               {advisor.phase === 'idle' && (
                 <>
                   <p className="text-sm font-bold text-text mt-1.5 leading-snug">
-                    Not sure which scheme to apply for, {firstName}?
+                    How much can you actually claim, {firstName}?
                   </p>
                   <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-                    The Advisor compares every scheme you qualify for and finds the best one. A student can avail only one scheme at a time.
+                    You can hold one scholarship at a time, plus any add-on grants you qualify for. The Advisor
+                    works out which package pays the most.
                   </p>
                   <button
                     type="button"
@@ -203,14 +197,14 @@ export default function SchemesScreen() {
                     className="mt-3 h-9 px-4 rounded-full bg-accent text-white text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform"
                   >
                     <Sparkles size={13} />
-                    <span>Find my best scheme</span>
+                    <span>Find my best package</span>
                   </button>
                 </>
               )}
 
               {advisor.phase === 'running' && (
                 <>
-                  <p className="text-sm font-bold text-text mt-1.5 leading-snug">Finding the best scheme for {firstName}…</p>
+                  <p className="text-sm font-bold text-text mt-1.5 leading-snug">Working out the best package for {firstName}…</p>
                   <ul className="mt-2.5 space-y-1.5" data-testid="advisor-steps">
                     {steps.map((label, i) => {
                       const done = i < advisor.step;
@@ -226,7 +220,7 @@ export default function SchemesScreen() {
                               <span className="block w-1.5 h-1.5 rounded-full bg-muted/40" />
                             )}
                           </span>
-                          <span className={done ? '' : active ? 'font-semibold' : ''}>{label}</span>
+                          <span className={active ? 'font-semibold' : ''}>{label}</span>
                         </li>
                       );
                     })}
@@ -235,68 +229,102 @@ export default function SchemesScreen() {
               )}
 
               {advisor.phase === 'done' && (
-                <>
-                  <p className="text-sm font-bold text-text mt-1.5 leading-snug">
-                    {recommendation.newIds.length === 0
-                      ? `You're already on the best option for ${firstName}`
-                      : `Best option for ${firstName}: ${nameOf(bestId)}`}
+                <div data-testid="advisor-result">
+                  <p className="text-[11px] font-mono uppercase tracking-wider text-accent-dark mt-2">
+                    Best package for {firstName}
                   </p>
-                  <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-                    Compared {recommendation.considered} {recommendation.category} schemes you qualify for. Only one scheme can be held at a time.
+                  <p className="text-[26px] font-extrabold text-text leading-none mt-0.5">
+                    {formatINR(best.total)}<span className="text-sm font-bold text-muted">/year</span>
+                  </p>
+                  <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                    {best.ids.length === 1
+                      ? '1 scheme you can hold'
+                      : `${best.ids.length} schemes you can hold together`} · compared {recommendation.packages.length} valid
+                    {recommendation.packages.length === 1 ? ' package' : ' packages'}
                   </p>
 
-                  <ul className="mt-2.5 space-y-2" data-testid="advisor-ranking">
-                    {recommendation.ranked.map((r, i) => {
-                      const isBest = recommendation.ids.includes(r.id);
-                      const pct = Math.max(6, Math.round((r.value / recommendation.ranked[0].value) * 100));
-                      return (
-                        <li key={r.id}>
-                          <div className="flex items-center gap-1.5 text-xs">
-                            {isBest ? (
-                              <Check size={12} className="text-accent-dark flex-shrink-0" />
-                            ) : (
-                              <span className="w-3 text-[10px] font-mono text-muted flex-shrink-0">{i + 1}</span>
+                  {/* the package, line by line, with what each payment is made of */}
+                  <ul className="mt-2.5 space-y-2" data-testid="advisor-package">
+                    {best.ids.map((id) => (
+                      <li key={id} className="rounded-lg bg-white/60 px-2.5 py-2">
+                        <div className="flex items-start gap-1.5 text-xs">
+                          <Check size={12} className="text-accent-dark flex-shrink-0 mt-0.5" strokeWidth={3} />
+                          <span className="font-bold text-text leading-snug">
+                            {nameOf(id)}
+                            {recommendation.appliedIn.includes(id) && (
+                              <span className="font-normal text-muted"> (already applied)</span>
                             )}
-                            <span className={`truncate ${isBest ? 'font-bold text-text' : 'text-muted'}`}>
-                              {nameOf(r.id)}
-                              {isBest && recommendation.appliedIn.includes(r.id) && (
-                                <span className="font-normal text-muted"> (already applied)</span>
-                              )}
-                            </span>
-                            <span className={`ml-auto flex-shrink-0 font-mono ${isBest ? 'font-bold text-accent-dark' : 'text-muted'}`}>
-                              {formatINR(r.value)}/yr
-                            </span>
-                          </div>
-                          <div className="mt-1 ml-[18px] h-1.5 rounded-full bg-white/70 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${isBest ? 'bg-accent' : 'bg-muted/40'}`}
-                              style={{ width: barsIn ? `${pct}%` : '0%', transition: 'width 700ms ease-out', transitionDelay: `${i * 120}ms` }}
-                            />
-                          </div>
-                        </li>
-                      );
-                    })}
+                          </span>
+                          <span className="ml-auto flex-shrink-0 font-mono font-bold text-accent-dark">
+                            {formatINR(valueOf(id))}
+                          </span>
+                        </div>
+                        <div className="mt-1 ml-[18px] flex items-center gap-1.5">
+                          <span className={`rounded px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wider ${
+                            kindOf(id) === 'addon' ? 'bg-accent/15 text-accent-dark' : 'bg-text/10 text-text'
+                          }`}>
+                            {kindOf(id) === 'addon' ? 'Add-on grant' : 'Scholarship'}
+                          </span>
+                        </div>
+                        <ul className="mt-1 ml-[18px] space-y-0.5">
+                          {componentsOf(id).map((c) => (
+                            <li key={c.label} className="flex items-baseline gap-2 text-[11px] text-muted">
+                              <span className="truncate">{c.label}</span>
+                              <span className="flex-1 border-b border-dotted border-muted/30" />
+                              <span className="font-mono flex-shrink-0">{formatINR(c.value)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
                   </ul>
 
-                  {recommendation.margin > 0 && (
-                    <p className="text-[11px] text-muted mt-2.5 leading-relaxed">
-                      Beats the next best option by <span className="font-semibold text-text">{formatINR(recommendation.margin)}/year</span>. Values are indicative sample figures.
-                    </p>
+                  <div className="mt-2 flex items-baseline gap-2 border-t border-accent-dark/20 pt-2 text-xs">
+                    <span className="font-bold text-text">Total annual benefit</span>
+                    <span className="flex-1" />
+                    <span className="font-mono text-sm font-extrabold text-accent-dark">{formatINR(best.total)}</span>
+                  </div>
+
+                  {runnerUp && (
+                    <div className="mt-2.5 rounded-lg bg-white/40 px-2.5 py-2">
+                      <p className="text-[11px] text-muted leading-relaxed">
+                        <span className="font-semibold text-text">Next best:</span>{' '}
+                        {nameOf(runnerUp.scholarshipId)}
+                        {runnerUp.addonIds.length > 0 && ` + ${runnerUp.addonIds.length} add-on`}
+                        {runnerUp.addonIds.length > 1 && 's'} ={' '}
+                        <span className="font-mono">{formatINR(runnerUp.total)}</span>/yr
+                      </p>
+                      {recommendation.gain > 0 && (
+                        <p className="text-[11px] text-text font-semibold mt-0.5">
+                          You gain {formatINR(recommendation.gain)}/year by choosing this package.
+                        </p>
+                      )}
+                    </div>
                   )}
 
+                  <p className="text-[10px] text-muted mt-2 leading-relaxed">
+                    One scholarship can be held at a time; add-on grants may be held alongside it. Rules are
+                    configurable by the Ministry. Values are indicative sample figures.
+                  </p>
+
                   <div className="mt-2.5 flex items-center gap-3">
-                    {recommendation.newIds.length > 0 && !bestSelected && (
+                    {recommendation.newIds.length > 0 && !allSelected && (
                       <button
                         type="button"
                         onClick={selectRecommended}
                         className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
                       >
-                        Select best option
+                        Select this package
                       </button>
                     )}
-                    {recommendation.newIds.length > 0 && bestSelected && (
+                    {recommendation.newIds.length > 0 && allSelected && (
                       <span className="flex items-center gap-1 text-xs font-bold text-accent-dark">
                         <Check size={13} strokeWidth={3} /> Selected. Tap Review &amp; apply below.
+                      </span>
+                    )}
+                    {recommendation.newIds.length === 0 && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-accent-dark">
+                        <Check size={13} strokeWidth={3} /> You are already on this package.
                       </span>
                     )}
                     <button
@@ -307,7 +335,7 @@ export default function SchemesScreen() {
                       Run again
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </section>
           );
