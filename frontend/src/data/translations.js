@@ -159,7 +159,7 @@ export const enDict = {
   "labelFinancialBenefit": "Financial Benefit",
   "labelDeadline": "Application Deadline",
   "searchPlaceholder": "Search schemes",
-  "applyToSelected": "Apply to selected",
+  "applyToSelected": "Review & apply",
   "viewDetails": "View details",
   "applyForScholarship": "Apply for this Scholarship",
   "applicationSubmitted": "Application Already Submitted",

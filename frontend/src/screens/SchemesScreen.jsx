@@ -8,11 +8,12 @@ import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
 import ChatSheet from '../components/ChatSheet';
 import ApplyModal from '../components/ApplyModal';
-import { Search, Check, ArrowRight } from 'lucide-react';
+import { Search, Check, ArrowRight, Sparkles, Ban } from 'lucide-react';
+import { conflictWith, recommendBundle, bundleValue, formatINR } from '../data/schemeRules';
 
 export default function SchemesScreen() {
   const navigate = useNavigate();
-  const { schemes, applications, selectedSchemeIds, toggleSchemeSelection, clearSchemeSelection, t } = useApp();
+  const { schemes, applications, selectedSchemeIds, toggleSchemeSelection, clearSchemeSelection, currentStudent, t } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
@@ -44,6 +45,17 @@ export default function SchemesScreen() {
   // Exclude schemes that have already been applied to (Fix 1)
   const appliedSchemeIds = applications.map((a) => a.schemeId);
   const unappliedSchemes = schemes.filter((scheme) => !appliedSchemeIds.includes(scheme.id));
+
+  // AdiSetu Advisor: best valid combination for this student (rule-based, deterministic)
+  const recommendation = recommendBundle(currentStudent, schemes, appliedSchemeIds);
+  const nameOf = (id) => {
+    const sc = schemes.find((x) => x.id === id);
+    return sc ? sc.shortName || sc.name : id;
+  };
+  const selectRecommended = () => {
+    clearSchemeSelection();
+    recommendation.newIds.forEach((id) => toggleSchemeSelection(id));
+  };
 
   // Filter schemes based on search and category
   const filteredSchemes = unappliedSchemes.filter((scheme) => {
@@ -134,6 +146,50 @@ export default function SchemesScreen() {
 
       {/* Main Content Area: Scheme Cards List scrolling smoothly underneath */}
       <main className="max-w-md mx-auto px-4 pt-4 pb-28 space-y-4">
+        {/* AdiSetu Advisor: best combination of schemes that can be held together */}
+        {recommendation && !searchQuery && (
+          <section
+            aria-label="Best scheme combination"
+            className="bg-accent-soft rounded-card p-4 shadow-xs"
+          >
+            <div className="flex items-center gap-1.5 text-accent-dark">
+              <Sparkles size={14} />
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">AdiSetu Advisor</span>
+            </div>
+            <p className="text-sm font-bold text-text mt-1.5 leading-snug">
+              {recommendation.newIds.length === 0
+                ? `You're already on the best option: ${formatINR(recommendation.value)}/year`
+                : `Best combination for ${currentStudent?.name?.split(' ')[0]}: ${formatINR(recommendation.value)}/year`}
+            </p>
+            <ul className="mt-1.5 space-y-0.5">
+              {recommendation.ids.map((id) => (
+                <li key={id} className="text-xs text-text flex items-center gap-1.5">
+                  <Check size={12} className="text-accent-dark flex-shrink-0" />
+                  <span className="truncate">
+                    {nameOf(id)}
+                    {recommendation.appliedIn.includes(id) && (
+                      <span className="text-muted"> (already applied)</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[11px] text-muted mt-2 leading-relaxed">
+              Compared {recommendation.considered} {recommendation.category} schemes you qualify for, keeping only
+              combinations that can be held together. Values are indicative sample figures.
+            </p>
+            {recommendation.newIds.length > 0 && (
+              <button
+                type="button"
+                onClick={selectRecommended}
+                className="mt-2.5 h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
+              >
+                Select {recommendation.appliedIn.length > 0 ? 'the new ones' : 'these'}
+              </button>
+            )}
+          </section>
+        )}
+
         {/* Recommended for you Section */}
         <div>
           <div className="section-label mb-3">
@@ -144,6 +200,7 @@ export default function SchemesScreen() {
             {filteredSchemes.map((scheme) => {
               const isSelected = selectedSchemeIds.includes(scheme.id);
               const sourcePillClass = getSourcePillClass(scheme.source);
+              const blocked = isSelected ? null : conflictWith(selectedSchemeIds, scheme.id, schemes);
 
               return (
                 <div
@@ -157,11 +214,15 @@ export default function SchemesScreen() {
                       role="checkbox"
                       aria-checked={isSelected}
                       aria-label={`Select ${scheme.shortName || scheme.name} for batch application`}
+                      aria-disabled={!!blocked}
+                      disabled={!!blocked}
                       onClick={() => toggleSchemeSelection(scheme.id)}
                       className={`w-[22px] h-[22px] mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors shadow-xs ${
                         isSelected
                           ? 'bg-accent text-white shadow-sm'
-                          : 'bg-[#ECECE7] dark:bg-[#2A2926] text-transparent hover:bg-[#E0E0DA] dark:hover:bg-[#343330]'
+                          : blocked
+                            ? 'bg-[#ECECE7] dark:bg-[#2A2926] text-muted opacity-50 cursor-not-allowed'
+                            : 'bg-[#ECECE7] dark:bg-[#2A2926] text-transparent hover:bg-[#E0E0DA] dark:hover:bg-[#343330]'
                       }`}
                     >
                       {isSelected && <Check size={14} strokeWidth={3} />}
@@ -192,6 +253,13 @@ export default function SchemesScreen() {
                       <p className="text-xs text-muted mt-1 leading-relaxed line-clamp-2">
                         {scheme.desc}
                       </p>
+
+                      {blocked && (
+                        <p className="mt-2 flex items-start gap-1.5 text-[11px] text-amber font-medium leading-snug" data-testid="conflict-note">
+                          <Ban size={12} className="mt-0.5 flex-shrink-0" />
+                          <span>Can't be held together with {nameOf(blocked.blockerId)}. {blocked.rule.label}.</span>
+                        </p>
+                      )}
 
                       {/* View details link - muted text color, orange only on hover/focus */}
                       <div className="mt-3 flex items-center justify-between">
@@ -245,6 +313,7 @@ export default function SchemesScreen() {
               </span>
               <span className="text-xs font-semibold">
                 {selectedSchemeIds.length === 1 ? '1 scheme selected' : `${selectedSchemeIds.length} schemes selected`}
+                <span className="font-normal opacity-90"> · ~{formatINR(bundleValue(selectedSchemeIds))}/yr</span>
               </span>
             </div>
 

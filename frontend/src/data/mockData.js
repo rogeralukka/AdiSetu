@@ -24,7 +24,7 @@ export const initialStudents = [
     id: "student-2",
     name: "Birsa Oraon",
     initials: "BO",
-    class: 8,
+    class: 9,
     category: "ST",
     subTribe: "Oraon (Kurukh)",
     guardianManaged: true,
