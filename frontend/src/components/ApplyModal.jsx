@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   Layers,
   Sparkles,
-  Check
+  Check,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function ApplyModal({
@@ -37,6 +38,7 @@ export default function ApplyModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdApps, setCreatedApps] = useState([]);
+  const [conflictInfo, setConflictInfo] = useState(null);
 
   // Reset state whenever modal opens or closes
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function ApplyModal({
       setIsSubmitting(false);
       setIsSuccess(false);
       setCreatedApps([]);
+      setConflictInfo(null);
     }
   }, [isOpen, schemeId, isBatch]);
 
@@ -67,14 +70,24 @@ export default function ApplyModal({
     setIsSubmitting(true);
     setTimeout(() => {
       if (isBatch) {
+        // applyToBatch silently skips any scheme that conflicts with an existing application or
+        // with another scheme earlier in this same batch (the checkbox UI already prevents picking
+        // conflicting schemes, so this is a defensive backstop, not the primary check).
         const apps = applyToBatch(selectedSchemeIds);
         setCreatedApps(apps);
+        setIsSubmitting(false);
+        setIsSuccess(true);
       } else {
-        const app = applyToScheme(targetSchemes[0].id);
-        setCreatedApps([app]);
+        const result = applyToScheme(targetSchemes[0].id);
+        if (result?.conflict) {
+          setIsSubmitting(false);
+          setConflictInfo(result.conflict);
+          return;
+        }
+        setCreatedApps([result]);
+        setIsSubmitting(false);
+        setIsSuccess(true);
       }
-      setIsSubmitting(false);
-      setIsSuccess(true);
     }, 700);
   };
 
@@ -108,7 +121,29 @@ export default function ApplyModal({
       maxWidth="max-w-lg"
     >
       <div className="overflow-y-auto p-5 space-y-4">
-          {isSuccess ? (
+          {conflictInfo ? (
+            /* Blocked: this scheme can't be held with an application the student already has */
+            <div className="text-center space-y-4 py-2 animate-in zoom-in-95 duration-200">
+              <div className="w-14 h-14 rounded-full bg-amber-soft text-amber mx-auto flex items-center justify-center shadow-sm">
+                <AlertTriangle size={32} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-text">Can't submit this application</h3>
+                <p className="text-xs text-muted mt-1 leading-relaxed max-w-sm mx-auto">
+                  You've already applied to <span className="font-semibold text-text">{conflictInfo.blockerName}</span>.{' '}
+                  {conflictInfo.rule.text} Withdraw that application first, or check the AdiSetu Advisor on the Schemes
+                  tab to see your best option.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-3.5 rounded-full bg-accent text-white text-xs font-bold shadow-card hover:opacity-95 active:scale-95 transition-all"
+              >
+                Close
+              </button>
+            </div>
+          ) : isSuccess ? (
             /* Success confirmation screen inside modal */
             <div className="text-center space-y-4 py-2 animate-in zoom-in-95 duration-200">
               <div className="w-14 h-14 rounded-full bg-green-soft text-green mx-auto flex items-center justify-center shadow-sm">

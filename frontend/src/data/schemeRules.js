@@ -208,6 +208,23 @@ export function recommendPackages(student, schemes, appliedIds = []) {
   const newIds = best.ids.filter((id) => !appliedIds.includes(id));
   const appliedIn = best.ids.filter((id) => appliedIds.includes(id));
 
+  // Defensive check: the app is meant to block a second scholarship at apply-time (see
+  // AppContext.applyToScheme / applyToBatch), so this should never trigger in normal use. It exists
+  // so the Advisor never silently ignores an invalid state if one is ever created another way.
+  const appliedScholarshipIds = appliedIds.filter((id) => kindOf(id) === 'scholarship' && byId(schemes, id));
+  let existingConflict = null;
+  if (appliedScholarshipIds.length > 1) {
+    const held = appliedScholarshipIds
+      .map((id) => ({ id, value: valueOf(id) }))
+      .sort((a, b) => b.value - a.value);
+    existingConflict = {
+      heldIds: appliedScholarshipIds,
+      keepId: held[0].id,
+      dropIds: held.slice(1).map((h) => h.id),
+      lostValue: held.slice(1).reduce((sum, h) => sum + h.value, 0),
+    };
+  }
+
   return {
     best,
     runnerUp,
@@ -219,6 +236,7 @@ export function recommendPackages(student, schemes, appliedIds = []) {
     considered: eligible.length,
     scholarshipCount: scholarships.length,
     addonCount: addons.length,
+    existingConflict,
   };
 }
 

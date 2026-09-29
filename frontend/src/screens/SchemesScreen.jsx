@@ -230,6 +230,19 @@ export default function SchemesScreen() {
 
               {advisor.phase === 'done' && (
                 <div data-testid="advisor-result">
+                  {recommendation.existingConflict && (
+                    <div className="mb-3 rounded-lg bg-amber-soft px-2.5 py-2.5" data-testid="advisor-existing-conflict">
+                      <p className="text-xs font-bold text-amber-dark">
+                        You currently have {recommendation.existingConflict.heldIds.length} scholarships applied
+                      </p>
+                      <p className="text-[11px] text-amber-dark mt-0.5 leading-relaxed">
+                        Only one can be honoured. Keep <span className="font-semibold">{nameOf(recommendation.existingConflict.keepId)}</span> —
+                        it pays more. {recommendation.existingConflict.dropIds.map(nameOf).join(', ')} should be withdrawn, or it may
+                        be rejected at verification.
+                      </p>
+                    </div>
+                  )}
+
                   <p className="text-[11px] font-mono uppercase tracking-wider text-accent-dark mt-2">
                     Best package for {firstName}
                   </p>

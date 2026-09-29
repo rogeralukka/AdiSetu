@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { getTranslatedStatus } from '../data/translations';
+import { conflictWith } from '../data/schemeRules';
 import TopBar from '../components/TopBar';
 import ChatSheet from '../components/ChatSheet';
 import ApplyModal from '../components/ApplyModal';
@@ -25,6 +26,13 @@ export default function SchemeDetailScreen() {
 
   const scheme = schemes.find((s) => s.id === id) || schemes[0];
   const alreadyApplied = applications.some((a) => a.schemeId === scheme.id);
+
+  // A student can avail only one scholarship/fellowship scheme at a time (add-on grants may be
+  // held alongside one scholarship). Check this BEFORE opening the apply flow, so the student
+  // never walks through 3 steps only to be blocked at the end.
+  const appliedSchemeIds = applications.map((a) => a.schemeId);
+  const blockedByExisting = !alreadyApplied ? conflictWith(appliedSchemeIds, scheme.id, schemes) : null;
+  const blockerScheme = blockedByExisting ? schemes.find((s) => s.id === blockedByExisting.blockerId) : null;
 
   // Source-tag pill color styling (NOS Portal -> Light Blue #DCEEF9 / #1F5A8C, SFMP -> Gold #F2E8C9 / #5E4A0F, NSP -> Terracotta #FBECE8 / #9E3D24)
   const getSourcePillClass = (source) => {
@@ -118,11 +126,31 @@ export default function SchemeDetailScreen() {
             </div>
           )}
 
+          {/* Conflict Callout: this scheme can't be held with an already-applied scholarship */}
+          {blockedByExisting && (
+            <div className="bg-amber-soft rounded-[12px] p-3 flex items-start gap-2.5" data-testid="detail-conflict-note">
+              <AlertTriangle size={16} className="text-amber mt-0.5 flex-shrink-0" />
+              <div className="flex-1 text-xs text-amber-dark leading-relaxed">
+                <span className="font-semibold">Can't apply — </span>
+                you've already applied to <span className="font-semibold">{blockerScheme?.shortName || blockerScheme?.name}</span>.{' '}
+                {blockedByExisting.rule.text} Check the AdiSetu Advisor on the Schemes tab to see your best option.
+              </div>
+            </div>
+          )}
+
           {/* State-Colored Apply Button / Submitted Status Pill (Fix 3) */}
           {alreadyApplied ? (
             <div className="w-full py-3.5 px-4 rounded-full text-xs font-bold bg-green-soft text-green flex items-center justify-center gap-2 cursor-default">
               <CheckCircle2 size={16} />
               <span>{t('applicationSubmitted')}</span>
+            </div>
+          ) : blockedByExisting ? (
+            <div
+              className="w-full py-3.5 px-4 rounded-full text-xs font-bold bg-[#ECECE7] dark:bg-[#2A2926] text-muted flex items-center justify-center gap-2 cursor-not-allowed"
+              data-testid="detail-apply-blocked"
+            >
+              <AlertTriangle size={16} />
+              <span>Can't apply — one scheme at a time</span>
             </div>
           ) : (
             <button

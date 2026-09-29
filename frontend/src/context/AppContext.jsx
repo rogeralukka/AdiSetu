@@ -7,6 +7,7 @@ import {
   initialNotifications,
 } from '../data/mockData';
 import { translations, languages } from '../data/translations';
+import { conflictWith } from '../data/schemeRules';
 import { 
   applyGoogleTranslation, 
   triggerGoogleTranslate, 
@@ -146,7 +147,9 @@ export function AppProvider({ children }) {
     setSelectedSchemeIds(allIds);
   };
 
-  // Add single application
+  // Add single application. A student can avail only one scholarship/fellowship scheme at a time
+  // (add-on grants may be held alongside a scholarship) - enforced here, not only in the batch UI,
+  // so there is exactly one place applications are created and exactly one place the rule is checked.
   const applyToScheme = (schemeId) => {
     const scheme = schemes.find((s) => s.id === schemeId);
     if (!scheme) return null;
@@ -154,6 +157,13 @@ export function AppProvider({ children }) {
     // Check if already applied
     const existing = applications.find((a) => a.schemeId === schemeId);
     if (existing) return existing;
+
+    const appliedIds = applications.map((a) => a.schemeId);
+    const blocked = conflictWith(appliedIds, schemeId, schemes);
+    if (blocked) {
+      const blockerScheme = schemes.find((s) => s.id === blocked.blockerId);
+      return { conflict: { ...blocked, blockerName: blockerScheme?.shortName || blockerScheme?.name || blocked.blockerId } };
+    }
 
     const newAppId = `app-${Date.now()}`;
     const newApplication = {
@@ -203,14 +213,19 @@ export function AppProvider({ children }) {
     return newApplication;
   };
 
-  // Batch apply to multiple schemes
+  // Batch apply to multiple schemes. Same one-scheme-at-a-time rule as applyToScheme, checked against
+  // both existing applications and the other schemes already accepted earlier in this same batch.
   const applyToBatch = (schemeIds) => {
     const createdApps = [];
     const targetSchemes = schemes.filter((s) => schemeIds.includes(s.id));
+    const existingAppliedIds = applications.map((a) => a.schemeId);
+    const acceptedIds = [];
 
     targetSchemes.forEach((scheme) => {
       const existing = applications.find((a) => a.schemeId === scheme.id);
-      if (!existing) {
+      const blocked = !existing && conflictWith([...existingAppliedIds, ...acceptedIds], scheme.id, schemes);
+      if (!existing && !blocked) {
+        acceptedIds.push(scheme.id);
         const newAppId = `app-${Date.now()}-${scheme.id}`;
         const newApp = {
           id: newAppId,
