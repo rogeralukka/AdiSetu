@@ -145,7 +145,7 @@ export default function SchemesScreen() {
       </div>
 
       {/* Main Content Area: Scheme Cards List scrolling smoothly underneath */}
-      <main className="max-w-md mx-auto px-4 pt-4 pb-28 space-y-4">
+      <main className="max-w-md mx-auto px-4 pt-4 pb-40 space-y-4">
         {/* AdiSetu Advisor: best combination of schemes that can be held together */}
         {recommendation && !searchQuery && (
           <section
@@ -155,6 +155,7 @@ export default function SchemesScreen() {
             <div className="flex items-center gap-1.5 text-accent-dark">
               <Sparkles size={14} />
               <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">AdiSetu Advisor</span>
+              <span className="ml-auto rounded-full bg-white/70 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted">Sample values</span>
             </div>
             <p className="text-sm font-bold text-text mt-1.5 leading-snug">
               {recommendation.newIds.length === 0
@@ -217,15 +218,16 @@ export default function SchemesScreen() {
                       aria-disabled={!!blocked}
                       disabled={!!blocked}
                       onClick={() => toggleSchemeSelection(scheme.id)}
-                      className={`w-[22px] h-[22px] mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors shadow-xs ${
+                      className={`w-[22px] h-[22px] mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${blocked && !isSelected ? '' : 'shadow-xs'} ${
                         isSelected
                           ? 'bg-accent text-white shadow-sm'
                           : blocked
-                            ? 'bg-[#ECECE7] dark:bg-[#2A2926] text-muted opacity-50 cursor-not-allowed'
+                            ? 'bg-transparent text-amber cursor-not-allowed'
                             : 'bg-[#ECECE7] dark:bg-[#2A2926] text-transparent hover:bg-[#E0E0DA] dark:hover:bg-[#343330]'
                       }`}
                     >
                       {isSelected && <Check size={14} strokeWidth={3} />}
+                      {!isSelected && blocked && <Ban size={22} strokeWidth={2} aria-hidden="true" />}
                     </button>
 
                     <div className="flex-1 min-w-0">
@@ -300,11 +302,11 @@ export default function SchemesScreen() {
       </main>
       </div>
 
-      {/* Batch Apply Floating Action Bar (bottom: 76px, above bottom nav) */}
+      {/* Batch Apply Floating Action Bar (clear of the 56px floating bottom nav) */}
       {selectedSchemeIds.length > 0 && (
         <aside 
           aria-label="Batch application actions"
-          className="fixed bottom-[76px] left-4 right-4 z-40 max-w-md mx-auto animate-in slide-in-from-bottom-3 duration-150"
+          className="fixed bottom-[96px] sm:bottom-[100px] left-4 right-4 z-40 max-w-md mx-auto animate-in slide-in-from-bottom-3 duration-150"
         >
           <div className="bg-accent text-white rounded-card px-4 py-3 shadow-card flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -313,7 +315,7 @@ export default function SchemesScreen() {
               </span>
               <span className="text-xs font-semibold">
                 {selectedSchemeIds.length === 1 ? '1 scheme selected' : `${selectedSchemeIds.length} schemes selected`}
-                <span className="font-normal opacity-90"> · ~{formatINR(bundleValue(selectedSchemeIds))}/yr</span>
+                <span className="font-normal opacity-90"> · ~{formatINR(bundleValue(selectedSchemeIds))}/yr (sample)</span>
               </span>
             </div>
 
