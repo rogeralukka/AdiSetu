@@ -158,7 +158,7 @@ export function AppProvider({ children }) {
     const existing = applications.find((a) => a.schemeId === schemeId);
     if (existing) return existing;
 
-    const appliedIds = applications.map((a) => a.schemeId);
+    const appliedIds = applications.filter((a) => a.studentId === currentStudent?.id).map((a) => a.schemeId);
     const blocked = conflictWith(appliedIds, schemeId, schemes);
     if (blocked) {
       const blockerScheme = schemes.find((s) => s.id === blocked.blockerId);
@@ -168,6 +168,7 @@ export function AppProvider({ children }) {
     const newAppId = `app-${Date.now()}`;
     const newApplication = {
       id: newAppId,
+      studentId: currentStudent?.id,
       schemeId: scheme.id,
       name: scheme.shortName,
       source: scheme.source,
@@ -218,7 +219,7 @@ export function AppProvider({ children }) {
   const applyToBatch = (schemeIds) => {
     const createdApps = [];
     const targetSchemes = schemes.filter((s) => schemeIds.includes(s.id));
-    const existingAppliedIds = applications.map((a) => a.schemeId);
+    const existingAppliedIds = applications.filter((a) => a.studentId === currentStudent?.id).map((a) => a.schemeId);
     const acceptedIds = [];
 
     targetSchemes.forEach((scheme) => {
@@ -229,6 +230,7 @@ export function AppProvider({ children }) {
         const newAppId = `app-${Date.now()}-${scheme.id}`;
         const newApp = {
           id: newAppId,
+          studentId: currentStudent?.id,
           schemeId: scheme.id,
           name: scheme.shortName,
           source: scheme.source,

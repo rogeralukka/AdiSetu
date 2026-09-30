@@ -9,7 +9,7 @@ import BottomNav from '../components/BottomNav';
 import ChatSheet from '../components/ChatSheet';
 import ApplyModal from '../components/ApplyModal';
 import { Search, Check, ArrowRight, Sparkles, Ban } from 'lucide-react';
-import { conflictWith, recommendPackages, bundleValue, formatINR, kindOf, componentsOf, valueOf } from '../data/schemeRules';
+import { conflictWith, recommendNext, bundleValue, formatINR, kindOf, componentsOf, valueOf } from '../data/schemeRules';
 
 export default function SchemesScreen() {
   const navigate = useNavigate();
@@ -55,20 +55,23 @@ export default function SchemesScreen() {
     return 'bg-[#FBECE8] text-[#9E3D24] dark:bg-[#361E18] dark:text-[#F6BBAA]';
   };
 
-  // Exclude schemes that have already been applied to (Fix 1)
-  const appliedSchemeIds = applications.map((a) => a.schemeId);
+  // Exclude schemes that have already been applied to BY THIS STUDENT (Fix 1)
+  const appliedSchemeIds = applications.filter((a) => a.studentId === currentStudent?.id).map((a) => a.schemeId);
   const unappliedSchemes = schemes.filter((scheme) => !appliedSchemeIds.includes(scheme.id));
 
-  // AdiSetu Advisor: best valid combination for this student (rule-based, deterministic)
-  const recommendation = recommendPackages(currentStudent, schemes, appliedSchemeIds);
+  // AdiSetu Advisor: sequential one-at-a-time optimizer (rule-based, deterministic)
+  const recommendation = recommendNext(currentStudent, schemes, appliedSchemeIds);
   const nameOf = (id) => {
     const sc = schemes.find((x) => x.id === id);
     return sc ? sc.shortName || sc.name : id;
   };
-  // Ticks every scheme in the recommended package into the batch selection
-  const selectRecommended = () => {
-    clearSchemeSelection();
-    recommendation.newIds.forEach((id) => toggleSchemeSelection(id));
+
+  // Advisor-triggered single-scheme apply modal
+  const [advisorApplySchemeId, setAdvisorApplySchemeId] = useState(null);
+  const openAdvisorApply = (schemeId) => setAdvisorApplySchemeId(schemeId);
+  const closeAdvisorApply = () => {
+    setAdvisorApplySchemeId(null);
+    setAdvisor({ phase: 'idle', step: 0 }); // reset so re-run shows next
   };
 
   // Filter schemes based on search and category
@@ -160,22 +163,47 @@ export default function SchemesScreen() {
 
       {/* Main Content Area: Scheme Cards List scrolling smoothly underneath */}
       <main className="max-w-md mx-auto px-4 pt-4 pb-40 space-y-4">
-        {/* AdiSetu Advisor: builds every valid package (one scholarship + the add-on grants the student
-            qualifies for), totals the annual benefit of each, and recommends the highest-value package.
+        {/* AdiSetu Advisor: recommends the single best scheme to apply for right now,
+            considering everything already applied and all conflict rules. Apply it, re-run,
+            get the next one — repeat until you've maximized your total benefit.
             Rule-based and deterministic. Figures are indicative sample values. */}
         {recommendation && !searchQuery && (() => {
           const firstName = currentStudent?.name?.split(' ')[0];
-          const best = recommendation.best;
-          const runnerUp = recommendation.runnerUp;
-          const allSelected = best.ids.every((id) => selectedSchemeIds.includes(id) || recommendation.appliedIn.includes(id));
+
+          // --- "All done" state: nothing more to recommend ---
+          if (recommendation.done) {
+            return (
+              <section aria-label="Advisor recommendation" className="bg-accent-soft rounded-card p-4 shadow-xs">
+                <div className="flex items-center gap-1.5 text-accent-dark">
+                  <Sparkles size={14} />
+                  <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">AdiSetu Advisor</span>
+                  <span className="ml-auto rounded-full bg-white/70 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted">Sample values</span>
+                </div>
+                <p className="text-sm font-bold text-text mt-1.5 leading-snug">
+                  You've applied for everything available, {firstName}
+                </p>
+                <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
+                  {recommendation.totalApplied} of {recommendation.totalEligible} eligible {recommendation.category} schemes applied.
+                  {recommendation.alreadyClaimed > 0 && (
+                    <> Total claimed so far: <span className="font-semibold text-text">{formatINR(recommendation.alreadyClaimed)}/year</span>.</>
+                  )}
+                  {' '}Track your applications in the Updates tab.
+                </p>
+              </section>
+            );
+          }
+
+          // --- Active recommendation: one scheme to apply for next ---
+          const pick = recommendation.pick;
           const steps = [
             `Reading your profile: Class ${currentStudent?.class}, ${recommendation.category} level`,
-            `${recommendation.considered} of ${schemes.length} schemes match you: ${recommendation.scholarshipCount} scholarships, ${recommendation.addonCount} add-on grants`,
-            'Building packages: one scholarship + every add-on you qualify for',
-            `Comparing ${recommendation.packages.length} valid packages by total annual benefit`,
+            `Checking ${recommendation.totalEligible} eligible schemes, ${recommendation.totalApplied} already applied`,
+            `Filtering out conflicts: ${recommendation.totalAvailable} still available to you`,
+            `Picking the highest-value option from ${recommendation.totalAvailable} schemes`,
           ];
+
           return (
-            <section aria-label="Best scheme combination" className="bg-accent-soft rounded-card p-4 shadow-xs">
+            <section aria-label="Advisor recommendation" className="bg-accent-soft rounded-card p-4 shadow-xs">
               <div className="flex items-center gap-1.5 text-accent-dark">
                 <Sparkles size={14} />
                 <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">AdiSetu Advisor</span>
@@ -185,11 +213,14 @@ export default function SchemesScreen() {
               {advisor.phase === 'idle' && (
                 <>
                   <p className="text-sm font-bold text-text mt-1.5 leading-snug">
-                    How much can you actually claim, {firstName}?
+                    {recommendation.totalApplied === 0
+                      ? `Which scheme should you apply for first, ${firstName}?`
+                      : `What should you apply for next, ${firstName}?`}
                   </p>
                   <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-                    You can hold one scholarship at a time, plus any add-on grants you qualify for. The Advisor
-                    works out which package pays the most.
+                    {recommendation.totalApplied === 0
+                      ? 'The Advisor checks every scheme you qualify for, applies the rules, and tells you which one to grab first.'
+                      : `You've applied for ${recommendation.totalApplied} scheme${recommendation.totalApplied > 1 ? 's' : ''} so far (${formatINR(recommendation.alreadyClaimed)}/yr). The Advisor finds your next best option.`}
                   </p>
                   <button
                     type="button"
@@ -197,14 +228,16 @@ export default function SchemesScreen() {
                     className="mt-3 h-9 px-4 rounded-full bg-accent text-white text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform"
                   >
                     <Sparkles size={13} />
-                    <span>Find my best package</span>
+                    <span>{recommendation.totalApplied === 0 ? 'Find my best scheme' : 'Find next best scheme'}</span>
                   </button>
                 </>
               )}
 
               {advisor.phase === 'running' && (
                 <>
-                  <p className="text-sm font-bold text-text mt-1.5 leading-snug">Working out the best package for {firstName}…</p>
+                  <p className="text-sm font-bold text-text mt-1.5 leading-snug">
+                    {recommendation.totalApplied === 0 ? `Finding the best scheme for ${firstName}…` : `Finding ${firstName}'s next best scheme…`}
+                  </p>
                   <ul className="mt-2.5 space-y-1.5" data-testid="advisor-steps">
                     {steps.map((label, i) => {
                       const done = i < advisor.step;
@@ -230,116 +263,92 @@ export default function SchemesScreen() {
 
               {advisor.phase === 'done' && (
                 <div data-testid="advisor-result">
-                  {recommendation.existingConflict && (
-                    <div className="mb-3 rounded-lg bg-amber-soft px-2.5 py-2.5" data-testid="advisor-existing-conflict">
-                      <p className="text-xs font-bold text-amber-dark">
-                        You currently have {recommendation.existingConflict.heldIds.length} scholarships applied
-                      </p>
-                      <p className="text-[11px] text-amber-dark mt-0.5 leading-relaxed">
-                        Only one can be honoured. Keep <span className="font-semibold">{nameOf(recommendation.existingConflict.keepId)}</span> —
-                        it pays more. {recommendation.existingConflict.dropIds.map(nameOf).join(', ')} should be withdrawn, or it may
-                        be rejected at verification.
-                      </p>
-                    </div>
-                  )}
-
                   <p className="text-[11px] font-mono uppercase tracking-wider text-accent-dark mt-2">
-                    Best package for {firstName}
-                  </p>
-                  <p className="text-[26px] font-extrabold text-text leading-none mt-0.5">
-                    {formatINR(best.total)}<span className="text-sm font-bold text-muted">/year</span>
-                  </p>
-                  <p className="text-[11px] text-muted mt-1 leading-relaxed">
-                    {best.ids.length === 1
-                      ? '1 scheme you can hold'
-                      : `${best.ids.length} schemes you can hold together`} · compared {recommendation.packages.length} valid
-                    {recommendation.packages.length === 1 ? ' package' : ' packages'}
+                    {recommendation.totalApplied === 0 ? 'Apply first' : 'Apply next'}
                   </p>
 
-                  {/* the package, line by line, with what each payment is made of */}
-                  <ul className="mt-2.5 space-y-2" data-testid="advisor-package">
-                    {best.ids.map((id) => (
-                      <li key={id} className="rounded-lg bg-white/60 px-2.5 py-2">
-                        <div className="flex items-start gap-1.5 text-xs">
-                          <Check size={12} className="text-accent-dark flex-shrink-0 mt-0.5" strokeWidth={3} />
-                          <span className="font-bold text-text leading-snug">
-                            {nameOf(id)}
-                            {recommendation.appliedIn.includes(id) && (
-                              <span className="font-normal text-muted"> (already applied)</span>
-                            )}
-                          </span>
-                          <span className="ml-auto flex-shrink-0 font-mono font-bold text-accent-dark">
-                            {formatINR(valueOf(id))}
-                          </span>
-                        </div>
-                        <div className="mt-1 ml-[18px] flex items-center gap-1.5">
+                  {/* The recommended scheme */}
+                  <div className="mt-1.5 rounded-lg bg-white/60 px-3 py-2.5" data-testid="advisor-pick">
+                    <div className="flex items-start gap-1.5">
+                      <Check size={13} className="text-accent-dark flex-shrink-0 mt-0.5" strokeWidth={3} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-text leading-snug">{nameOf(pick.id)}</p>
+                        <div className="mt-0.5 flex items-center gap-1.5">
                           <span className={`rounded px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wider ${
-                            kindOf(id) === 'addon' ? 'bg-accent/15 text-accent-dark' : 'bg-text/10 text-text'
+                            pick.kind === 'addon' ? 'bg-accent/15 text-accent-dark' : 'bg-text/10 text-text'
                           }`}>
-                            {kindOf(id) === 'addon' ? 'Add-on grant' : 'Scholarship'}
+                            {pick.kind === 'addon' ? 'Add-on grant' : 'Scholarship'}
                           </span>
                         </div>
-                        <ul className="mt-1 ml-[18px] space-y-0.5">
-                          {componentsOf(id).map((c) => (
-                            <li key={c.label} className="flex items-baseline gap-2 text-[11px] text-muted">
-                              <span className="truncate">{c.label}</span>
-                              <span className="flex-1 border-b border-dotted border-muted/30" />
-                              <span className="font-mono flex-shrink-0">{formatINR(c.value)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                      <span className="font-mono text-lg font-extrabold text-accent-dark flex-shrink-0">
+                        {formatINR(pick.value)}
+                      </span>
+                    </div>
 
-                  <div className="mt-2 flex items-baseline gap-2 border-t border-accent-dark/20 pt-2 text-xs">
-                    <span className="font-bold text-text">Total annual benefit</span>
-                    <span className="flex-1" />
-                    <span className="font-mono text-sm font-extrabold text-accent-dark">{formatINR(best.total)}</span>
+                    {/* Component breakdown */}
+                    <ul className="mt-1.5 ml-[18px] space-y-0.5">
+                      {componentsOf(pick.id).map((c) => (
+                        <li key={c.label} className="flex items-baseline gap-2 text-[11px] text-muted">
+                          <span className="truncate">{c.label}</span>
+                          <span className="flex-1 border-b border-dotted border-muted/30" />
+                          <span className="font-mono flex-shrink-0">{formatINR(c.value)}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  {runnerUp && (
-                    <div className="mt-2.5 rounded-lg bg-white/40 px-2.5 py-2">
+                  {/* Why this one — comparison with runner-up */}
+                  {recommendation.runnerUp && (
+                    <div className="mt-2 rounded-lg bg-white/40 px-2.5 py-2">
                       <p className="text-[11px] text-muted leading-relaxed">
                         <span className="font-semibold text-text">Next best:</span>{' '}
-                        {nameOf(runnerUp.scholarshipId)}
-                        {runnerUp.addonIds.length > 0 && ` + ${runnerUp.addonIds.length} add-on`}
-                        {runnerUp.addonIds.length > 1 && 's'} ={' '}
-                        <span className="font-mono">{formatINR(runnerUp.total)}</span>/yr
+                        {nameOf(recommendation.runnerUp.id)} — {formatINR(recommendation.runnerUp.value)}/yr
                       </p>
                       {recommendation.gain > 0 && (
                         <p className="text-[11px] text-text font-semibold mt-0.5">
-                          You gain {formatINR(recommendation.gain)}/year by choosing this package.
+                          This one pays {formatINR(recommendation.gain)}/year more.
                         </p>
                       )}
                     </div>
                   )}
 
-                  <p className="text-[10px] text-muted mt-2 leading-relaxed">
-                    One scholarship can be held at a time; add-on grants may be held alongside it. Rules are
-                    configurable by the Ministry. Values are indicative sample figures.
+                  {/* What it blocks */}
+                  {recommendation.wouldBlock.length > 0 && (
+                    <p className="mt-1.5 text-[11px] text-muted leading-relaxed">
+                      <span className="font-semibold text-text">Blocks:</span>{' '}
+                      {recommendation.wouldBlock.map(nameOf).join(', ')} (can't be held together).
+                    </p>
+                  )}
+
+                  {/* Running total and what's left */}
+                  <div className="mt-2 flex items-baseline gap-2 border-t border-accent-dark/20 pt-2 text-xs">
+                    {recommendation.alreadyClaimed > 0 && (
+                      <>
+                        <span className="text-muted">So far: {formatINR(recommendation.alreadyClaimed)}/yr</span>
+                        <span className="text-muted">→</span>
+                      </>
+                    )}
+                    <span className="font-bold text-text">After this: {formatINR(recommendation.afterThisTotal)}/yr</span>
+                    <span className="flex-1" />
+                    {recommendation.afterThisRemaining > 0 && (
+                      <span className="text-[10px] text-muted">{recommendation.afterThisRemaining} more available</span>
+                    )}
+                  </div>
+
+                  <p className="text-[10px] text-muted mt-1.5 leading-relaxed">
+                    Rules are configurable by the Ministry. Values are indicative sample figures.
                   </p>
 
                   <div className="mt-2.5 flex items-center gap-3">
-                    {recommendation.newIds.length > 0 && !allSelected && (
-                      <button
-                        type="button"
-                        onClick={selectRecommended}
-                        className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
-                      >
-                        Select this package
-                      </button>
-                    )}
-                    {recommendation.newIds.length > 0 && allSelected && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-accent-dark">
-                        <Check size={13} strokeWidth={3} /> Selected. Tap Review &amp; apply below.
-                      </span>
-                    )}
-                    {recommendation.newIds.length === 0 && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-accent-dark">
-                        <Check size={13} strokeWidth={3} /> You are already on this package.
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => openAdvisorApply(pick.id)}
+                      className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
+                      data-testid="advisor-apply-btn"
+                    >
+                      Apply for this scheme
+                    </button>
                     <button
                       type="button"
                       onClick={runAdvisor}
@@ -493,6 +502,15 @@ export default function SchemesScreen() {
           </div>
         </aside>
       )}
+
+      {/* Advisor single-scheme Apply Modal */}
+      <ApplyModal
+        isOpen={!!advisorApplySchemeId}
+        onClose={closeAdvisorApply}
+        schemeId={advisorApplySchemeId}
+        isBatch={false}
+        onSuccessDone={closeAdvisorApply}
+      />
 
       {/* Floating Batch Apply Modal */}
       <ApplyModal

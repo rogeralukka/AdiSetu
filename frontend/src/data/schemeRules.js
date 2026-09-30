@@ -178,67 +178,87 @@ function qualifies(id, student, state) {
 }
 
 /**
- * Builds every valid package (one scholarship + all qualifying add-ons) for this student and
- * ranks them by total annual benefit. Deterministic - no model, no randomness.
+ * Sequential one-at-a-time advisor. Finds the single best scheme the student should apply for
+ * RIGHT NOW — the highest-value eligible scheme that doesn't conflict with anything already applied.
  *
- * Returns { best, runnerUp, gain, packages, ... } where each package is
- * { ids, total, scholarshipId, addonIds }.
+ * Call it, apply the recommendation, call it again → it gives the NEXT best, and so on until
+ * the student has maximized their total benefit.
+ *
+ * Returns null if there's nothing left to recommend.
+ * Otherwise returns { pick, runnerUp, gain, alreadyClaimed, afterThis, remaining, ... }.
  */
-export function recommendPackages(student, schemes, appliedIds = []) {
+export function recommendNext(student, schemes, appliedIds = []) {
   const category = levelCategory(student);
   if (!category) return null;
   const state = studentState(student);
 
+  // All schemes this student is eligible for at their education level
   const eligible = schemes.filter((s) => s.category === category && qualifies(s.id, student, state));
-  const scholarships = eligible.filter((s) => kindOf(s.id) === 'scholarship');
-  const addons = eligible.filter((s) => kindOf(s.id) === 'addon');
-  if (scholarships.length === 0) return null;
 
-  const addonIds = addons.map((a) => a.id);
-  const packages = scholarships
-    .map((sc) => {
-      const ids = [sc.id, ...addonIds];
-      return { ids, total: bundleValue(ids), scholarshipId: sc.id, addonIds };
-    })
-    .sort((a, b) => b.total - a.total);
+  // What's already applied and how much it's worth
+  const alreadyAppliedEligible = eligible.filter((s) => appliedIds.includes(s.id));
+  const alreadyClaimed = bundleValue(appliedIds.filter((id) => eligible.some((s) => s.id === id)));
 
-  const best = packages[0];
-  const runnerUp = packages[1] || null;
-  const gain = runnerUp ? best.total - runnerUp.total : null;
-  const newIds = best.ids.filter((id) => !appliedIds.includes(id));
-  const appliedIn = best.ids.filter((id) => appliedIds.includes(id));
+  // Which eligible schemes haven't been applied to yet AND don't conflict with anything applied?
+  const available = eligible.filter((s) => {
+    if (appliedIds.includes(s.id)) return false;
+    const conflict = conflictWith(appliedIds, s.id, schemes);
+    return !conflict;
+  });
 
-  // Defensive check: the app is meant to block a second scholarship at apply-time (see
-  // AppContext.applyToScheme / applyToBatch), so this should never trigger in normal use. It exists
-  // so the Advisor never silently ignores an invalid state if one is ever created another way.
-  const appliedScholarshipIds = appliedIds.filter((id) => kindOf(id) === 'scholarship' && byId(schemes, id));
-  let existingConflict = null;
-  if (appliedScholarshipIds.length > 1) {
-    const held = appliedScholarshipIds
-      .map((id) => ({ id, value: valueOf(id) }))
-      .sort((a, b) => b.value - a.value);
-    existingConflict = {
-      heldIds: appliedScholarshipIds,
-      keepId: held[0].id,
-      dropIds: held.slice(1).map((h) => h.id),
-      lostValue: held.slice(1).reduce((sum, h) => sum + h.value, 0),
+  if (available.length === 0) {
+    // Nothing left to recommend — either all applied or all blocked
+    const totalEligible = eligible.length;
+    const totalApplied = alreadyAppliedEligible.length;
+    return {
+      done: true,
+      pick: null,
+      alreadyClaimed,
+      totalApplied,
+      totalEligible,
+      category,
     };
   }
 
+  // Sort by value descending — pick the best one
+  const ranked = available
+    .map((s) => ({ id: s.id, value: valueOf(s.id), kind: kindOf(s.id) }))
+    .sort((a, b) => b.value - a.value);
+
+  const pick = ranked[0];
+  const runnerUp = ranked[1] || null;
+  const gain = runnerUp ? pick.value - runnerUp.value : null;
+
+  // What would get blocked if the student applies to this pick?
+  const wouldBlock = available.filter((s) => {
+    if (s.id === pick.id) return false;
+    const conflict = findConflict(pick.id, s.id, schemes);
+    return !!conflict;
+  }).map((s) => s.id);
+
+  // How many more could still be applied after this one?
+  const hypotheticalApplied = [...appliedIds, pick.id];
+  const afterThis = available.filter((s) => {
+    if (s.id === pick.id) return false;
+    const conflict = conflictWith(hypotheticalApplied, s.id, schemes);
+    return !conflict;
+  });
+
   return {
-    best,
+    done: false,
+    pick,
     runnerUp,
     gain,
-    packages,
-    newIds,
-    appliedIn,
+    alreadyClaimed,
+    afterThisTotal: alreadyClaimed + pick.value,
+    afterThisRemaining: afterThis.length,
+    wouldBlock,
     category,
-    considered: eligible.length,
-    scholarshipCount: scholarships.length,
-    addonCount: addons.length,
-    existingConflict,
+    totalEligible: eligible.length,
+    totalApplied: alreadyAppliedEligible.length,
+    totalAvailable: available.length,
   };
 }
 
-// Backwards-compatible alias
-export const recommendBundle = recommendPackages;
+// Keep the old function name as an alias so nothing breaks during transition
+export const recommendPackages = recommendNext;

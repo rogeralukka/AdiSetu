@@ -21,16 +21,16 @@ import {
 export default function SchemeDetailScreen() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { schemes, applications, documents, t } = useApp();
+  const { schemes, applications, documents, t, currentStudent } = useApp();
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   const scheme = schemes.find((s) => s.id === id) || schemes[0];
-  const alreadyApplied = applications.some((a) => a.schemeId === scheme.id);
+  const alreadyApplied = applications.some((a) => a.schemeId === scheme.id && a.studentId === currentStudent?.id);
 
   // A student can avail only one scholarship/fellowship scheme at a time (add-on grants may be
   // held alongside one scholarship). Check this BEFORE opening the apply flow, so the student
   // never walks through 3 steps only to be blocked at the end.
-  const appliedSchemeIds = applications.map((a) => a.schemeId);
+  const appliedSchemeIds = applications.filter((a) => a.studentId === currentStudent?.id).map((a) => a.schemeId);
   const blockedByExisting = !alreadyApplied ? conflictWith(appliedSchemeIds, scheme.id, schemes) : null;
   const blockerScheme = blockedByExisting ? schemes.find((s) => s.id === blockedByExisting.blockerId) : null;
 

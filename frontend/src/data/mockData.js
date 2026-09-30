@@ -633,6 +633,7 @@ export const initialSchemes = [
 export const initialApplications = [
   {
     id: "app-1",
+    studentId: "student-1",
     schemeId: "pm",
     name: "Post-Matric Scholarship",
     source: "NSP",
@@ -654,6 +655,7 @@ export const initialApplications = [
   },
   {
     id: "app-2",
+    studentId: "student-1",
     schemeId: "nfst",
     name: "NFST Scholarship",
     source: "SFMP",
