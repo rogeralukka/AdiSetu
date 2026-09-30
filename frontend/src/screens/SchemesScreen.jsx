@@ -13,7 +13,7 @@ import { conflictWith, recommendNext, bundleValue, formatINR, kindOf, components
 
 export default function SchemesScreen() {
   const navigate = useNavigate();
-  const { schemes, applications, selectedSchemeIds, toggleSchemeSelection, clearSchemeSelection, currentStudent, t } = useApp();
+  const { schemes, applications, selectedSchemeIds, toggleSchemeSelection, clearSchemeSelection, currentStudent, switchStudent, t } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
@@ -32,6 +32,11 @@ export default function SchemesScreen() {
     return () => clearTimeout(timer);
   }, [advisor]);
   const runAdvisor = () => setAdvisor({ phase: 'running', step: 0 });
+
+  // Reset advisor state whenever switching students (e.g. Priya <-> Birsa)
+  useEffect(() => {
+    setAdvisor({ phase: 'idle', step: 0 });
+  }, [currentStudent?.id]);
 
   const filterOptions = [
     'All',
@@ -169,37 +174,16 @@ export default function SchemesScreen() {
             Rule-based and deterministic. Figures are indicative sample values. */}
         {recommendation && !searchQuery && (() => {
           const firstName = currentStudent?.name?.split(' ')[0];
-
-          // --- "All done" state: nothing more to recommend ---
-          if (recommendation.done) {
-            return (
-              <section aria-label="Advisor recommendation" className="bg-accent-soft rounded-card p-4 shadow-xs">
-                <div className="flex items-center gap-1.5 text-accent-dark">
-                  <Sparkles size={14} />
-                  <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">AdiSetu Advisor</span>
-                  <span className="ml-auto rounded-full bg-white/70 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted">Sample values</span>
-                </div>
-                <p className="text-sm font-bold text-text mt-1.5 leading-snug">
-                  You've applied for everything available, {firstName}
-                </p>
-                <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-                  {recommendation.totalApplied} of {recommendation.totalEligible} eligible {recommendation.category} schemes applied.
-                  {recommendation.alreadyClaimed > 0 && (
-                    <> Total claimed so far: <span className="font-semibold text-text">{formatINR(recommendation.alreadyClaimed)}/year</span>.</>
-                  )}
-                  {' '}Track your applications in the Updates tab.
-                </p>
-              </section>
-            );
-          }
-
-          // --- Active recommendation: one scheme to apply for next ---
+          const isDone = recommendation.done;
           const pick = recommendation.pick;
+          const currentBest = recommendation.currentBest;
           const steps = [
             `Reading your profile: Class ${currentStudent?.class}, ${recommendation.category} level`,
             `Checking ${recommendation.totalEligible} eligible schemes, ${recommendation.totalApplied} already applied`,
-            `Filtering out conflicts: ${recommendation.totalAvailable} still available to you`,
-            `Picking the highest-value option from ${recommendation.totalAvailable} schemes`,
+            `Evaluating rules: one scholarship at a time, state & institutional criteria`,
+            isDone
+              ? `Confirming maximum benefit coverage for Class ${currentStudent?.class}`
+              : `Picking highest-value available option (${recommendation.totalAvailable} remaining)`,
           ];
 
           return (
@@ -210,33 +194,61 @@ export default function SchemesScreen() {
                 <span className="ml-auto rounded-full bg-white/70 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted">Sample values</span>
               </div>
 
+              {/* PHASE 1: IDLE */}
               {advisor.phase === 'idle' && (
                 <>
                   <p className="text-sm font-bold text-text mt-1.5 leading-snug">
-                    {recommendation.totalApplied === 0
+                    {isDone
+                      ? `Check your scheme optimization, ${firstName}`
+                      : recommendation.totalApplied === 0
                       ? `Which scheme should you apply for first, ${firstName}?`
                       : `What should you apply for next, ${firstName}?`}
                   </p>
                   <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-                    {recommendation.totalApplied === 0
-                      ? 'The Advisor checks every scheme you qualify for, applies the rules, and tells you which one to grab first.'
+                    {isDone
+                      ? `You're currently enrolled in ${currentBest ? nameOf(currentBest.id) : 'your scheme'} (${formatINR(recommendation.alreadyClaimed)}/yr). Run the Advisor to analyze your coverage and verify you're getting maximum benefit.`
+                      : recommendation.totalApplied === 0
+                      ? 'The Advisor checks every scheme you qualify for, evaluates conflict rules, and tells you which one gives you the highest benefit.'
                       : `You've applied for ${recommendation.totalApplied} scheme${recommendation.totalApplied > 1 ? 's' : ''} so far (${formatINR(recommendation.alreadyClaimed)}/yr). The Advisor finds your next best option.`}
                   </p>
-                  <button
-                    type="button"
-                    onClick={runAdvisor}
-                    className="mt-3 h-9 px-4 rounded-full bg-accent text-white text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform"
-                  >
-                    <Sparkles size={13} />
-                    <span>{recommendation.totalApplied === 0 ? 'Find my best scheme' : 'Find next best scheme'}</span>
-                  </button>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={runAdvisor}
+                      className="h-9 px-4 rounded-full bg-accent text-white text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform shadow-xs"
+                      data-testid="advisor-run-btn"
+                    >
+                      <Sparkles size={13} />
+                      <span>
+                        {isDone
+                          ? 'Run Advisor Analysis'
+                          : recommendation.totalApplied === 0
+                          ? 'Find my best scheme'
+                          : 'Find next best scheme'}
+                      </span>
+                    </button>
+                    {isDone && currentStudent?.id === 'student-1' && (
+                      <button
+                        type="button"
+                        onClick={() => switchStudent('student-2')}
+                        className="text-[11px] text-accent font-semibold hover:underline"
+                      >
+                        Switch to Birsa (Class 9) to try fresh application flow →
+                      </button>
+                    )}
+                  </div>
                 </>
               )}
 
+              {/* PHASE 2: RUNNING */}
               {advisor.phase === 'running' && (
                 <>
                   <p className="text-sm font-bold text-text mt-1.5 leading-snug">
-                    {recommendation.totalApplied === 0 ? `Finding the best scheme for ${firstName}…` : `Finding ${firstName}'s next best scheme…`}
+                    {isDone
+                      ? `Analyzing scheme optimization for ${firstName}…`
+                      : recommendation.totalApplied === 0
+                      ? `Finding the best scheme for ${firstName}…`
+                      : `Finding ${firstName}'s next best scheme…`}
                   </p>
                   <ul className="mt-2.5 space-y-1.5" data-testid="advisor-steps">
                     {steps.map((label, i) => {
@@ -261,102 +273,190 @@ export default function SchemesScreen() {
                 </>
               )}
 
+              {/* PHASE 3: DONE */}
               {advisor.phase === 'done' && (
                 <div data-testid="advisor-result">
-                  <p className="text-[11px] font-mono uppercase tracking-wider text-accent-dark mt-2">
-                    {recommendation.totalApplied === 0 ? 'Apply first' : 'Apply next'}
-                  </p>
+                  {/* SUB-CASE A: There is a next scheme to apply for */}
+                  {!isDone && pick && (
+                    <>
+                      <p className="text-[11px] font-mono uppercase tracking-wider text-accent-dark mt-2">
+                        {recommendation.totalApplied === 0 ? 'Apply first' : 'Apply next'}
+                      </p>
 
-                  {/* The recommended scheme */}
-                  <div className="mt-1.5 rounded-lg bg-white/60 px-3 py-2.5" data-testid="advisor-pick">
-                    <div className="flex items-start gap-1.5">
-                      <Check size={13} className="text-accent-dark flex-shrink-0 mt-0.5" strokeWidth={3} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-text leading-snug">{nameOf(pick.id)}</p>
-                        <div className="mt-0.5 flex items-center gap-1.5">
-                          <span className={`rounded px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wider ${
-                            pick.kind === 'addon' ? 'bg-accent/15 text-accent-dark' : 'bg-text/10 text-text'
-                          }`}>
-                            {pick.kind === 'addon' ? 'Add-on grant' : 'Scholarship'}
+                      <div className="mt-1.5 rounded-lg bg-white/60 px-3 py-2.5" data-testid="advisor-pick">
+                        <div className="flex items-start gap-1.5">
+                          <Check size={13} className="text-accent-dark flex-shrink-0 mt-0.5" strokeWidth={3} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-text leading-snug">{nameOf(pick.id)}</p>
+                            <div className="mt-0.5 flex items-center gap-1.5">
+                              <span className={`rounded px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wider ${
+                                pick.kind === 'addon' ? 'bg-accent/15 text-accent-dark' : 'bg-text/10 text-text'
+                              }`}>
+                                {pick.kind === 'addon' ? 'Add-on grant' : 'Scholarship'}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="font-mono text-lg font-extrabold text-accent-dark flex-shrink-0">
+                            {formatINR(pick.value)}
                           </span>
                         </div>
+
+                        {/* Component breakdown */}
+                        <ul className="mt-1.5 ml-[18px] space-y-0.5">
+                          {componentsOf(pick.id).map((c) => (
+                            <li key={c.label} className="flex items-baseline gap-2 text-[11px] text-muted">
+                              <span className="truncate">{c.label}</span>
+                              <span className="flex-1 border-b border-dotted border-muted/30" />
+                              <span className="font-mono flex-shrink-0">{formatINR(c.value)}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <span className="font-mono text-lg font-extrabold text-accent-dark flex-shrink-0">
-                        {formatINR(pick.value)}
-                      </span>
-                    </div>
 
-                    {/* Component breakdown */}
-                    <ul className="mt-1.5 ml-[18px] space-y-0.5">
-                      {componentsOf(pick.id).map((c) => (
-                        <li key={c.label} className="flex items-baseline gap-2 text-[11px] text-muted">
-                          <span className="truncate">{c.label}</span>
-                          <span className="flex-1 border-b border-dotted border-muted/30" />
-                          <span className="font-mono flex-shrink-0">{formatINR(c.value)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                      {/* Comparison with runner-up */}
+                      {recommendation.runnerUp && (
+                        <div className="mt-2 rounded-lg bg-white/40 px-2.5 py-2">
+                          <p className="text-[11px] text-muted leading-relaxed">
+                            <span className="font-semibold text-text">Next best:</span>{' '}
+                            {nameOf(recommendation.runnerUp.id)} — {formatINR(recommendation.runnerUp.value)}/yr
+                          </p>
+                          {recommendation.gain > 0 && (
+                            <p className="text-[11px] text-text font-semibold mt-0.5">
+                              This one pays {formatINR(recommendation.gain)}/year more.
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                  {/* Why this one — comparison with runner-up */}
-                  {recommendation.runnerUp && (
-                    <div className="mt-2 rounded-lg bg-white/40 px-2.5 py-2">
-                      <p className="text-[11px] text-muted leading-relaxed">
-                        <span className="font-semibold text-text">Next best:</span>{' '}
-                        {nameOf(recommendation.runnerUp.id)} — {formatINR(recommendation.runnerUp.value)}/yr
-                      </p>
-                      {recommendation.gain > 0 && (
-                        <p className="text-[11px] text-text font-semibold mt-0.5">
-                          This one pays {formatINR(recommendation.gain)}/year more.
+                      {/* What it blocks */}
+                      {recommendation.wouldBlock.length > 0 && (
+                        <p className="mt-1.5 text-[11px] text-muted leading-relaxed">
+                          <span className="font-semibold text-text">Blocks:</span>{' '}
+                          {recommendation.wouldBlock.map(nameOf).join(', ')} (can't be held together).
                         </p>
                       )}
-                    </div>
+
+                      {/* Running total and what's left */}
+                      <div className="mt-2 flex items-baseline gap-2 border-t border-accent-dark/20 pt-2 text-xs">
+                        {recommendation.alreadyClaimed > 0 && (
+                          <>
+                            <span className="text-muted">So far: {formatINR(recommendation.alreadyClaimed)}/yr</span>
+                            <span className="text-muted">→</span>
+                          </>
+                        )}
+                        <span className="font-bold text-text">After this: {formatINR(recommendation.afterThisTotal)}/yr</span>
+                        <span className="flex-1" />
+                        {recommendation.afterThisRemaining > 0 && (
+                          <span className="text-[10px] text-muted">{recommendation.afterThisRemaining} more available</span>
+                        )}
+                      </div>
+
+                      <div className="mt-2.5 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => openAdvisorApply(pick.id)}
+                          className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
+                          data-testid="advisor-apply-btn"
+                        >
+                          Apply for this scheme
+                        </button>
+                        <button
+                          type="button"
+                          onClick={runAdvisor}
+                          className="text-[11px] font-semibold text-muted underline underline-offset-2 active:opacity-70"
+                        >
+                          Run again
+                        </button>
+                      </div>
+                    </>
                   )}
 
-                  {/* What it blocks */}
-                  {recommendation.wouldBlock.length > 0 && (
-                    <p className="mt-1.5 text-[11px] text-muted leading-relaxed">
-                      <span className="font-semibold text-text">Blocks:</span>{' '}
-                      {recommendation.wouldBlock.map(nameOf).join(', ')} (can't be held together).
-                    </p>
+                  {/* SUB-CASE B: Student has applied to everything available / optimal */}
+                  {isDone && (
+                    <>
+                      <p className="text-[11px] font-mono uppercase tracking-wider text-accent-dark mt-2">
+                        Optimal Coverage Confirmed
+                      </p>
+
+                      <div className="mt-1.5 rounded-lg bg-white/60 px-3 py-2.5" data-testid="advisor-optimal">
+                        <div className="flex items-start gap-1.5">
+                          <Check size={14} className="text-accent-dark flex-shrink-0 mt-0.5" strokeWidth={3} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-text leading-snug">
+                              {currentBest ? nameOf(currentBest.id) : 'Current Scheme'}
+                            </p>
+                            <span className="inline-block mt-0.5 rounded px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wider bg-green-soft text-green">
+                              Already Applied &amp; Active
+                            </span>
+                          </div>
+                          <span className="font-mono text-lg font-extrabold text-accent-dark flex-shrink-0">
+                            {formatINR(recommendation.alreadyClaimed)}
+                          </span>
+                        </div>
+
+                        {/* Components of current best */}
+                        {currentBest && (
+                          <ul className="mt-2 ml-[18px] space-y-0.5">
+                            {componentsOf(currentBest.id).map((c) => (
+                              <li key={c.label} className="flex items-baseline gap-2 text-[11px] text-muted">
+                                <span className="truncate">{c.label}</span>
+                                <span className="flex-1 border-b border-dotted border-muted/30" />
+                                <span className="font-mono flex-shrink-0">{formatINR(c.value)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Tradeoff intelligence */}
+                      <div className="mt-2 rounded-lg bg-white/40 px-2.5 py-2 space-y-1">
+                        {recommendation.runnerUp && (
+                          <p className="text-[11px] text-muted leading-relaxed">
+                            <span className="font-semibold text-text">Beats next best:</span>{' '}
+                            {nameOf(recommendation.runnerUp.id)} ({formatINR(recommendation.runnerUp.value)}/yr)
+                            {recommendation.gain > 0 && ` by ${formatINR(recommendation.gain)}/year`}.
+                          </p>
+                        )}
+                        <p className="text-[11px] text-muted leading-relaxed">
+                          All other {recommendation.category} scholarships are mutually exclusive under the one-scholarship rule. You have maximized your annual claim.
+                        </p>
+                      </div>
+
+                      <div className="mt-2 flex items-baseline gap-2 border-t border-accent-dark/20 pt-2 text-xs">
+                        <span className="font-bold text-text">Total annual entitlement</span>
+                        <span className="flex-1" />
+                        <span className="font-mono text-sm font-extrabold text-accent-dark">
+                          {formatINR(recommendation.alreadyClaimed)}/year
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <Link
+                          to="/updates"
+                          className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform flex items-center gap-1 shadow-xs"
+                        >
+                          <span>Track in Updates</span>
+                          <ArrowRight size={13} />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={runAdvisor}
+                          className="text-[11px] font-semibold text-muted underline underline-offset-2 active:opacity-70"
+                        >
+                          Run again
+                        </button>
+                        {currentStudent?.id === 'student-1' && (
+                          <button
+                            type="button"
+                            onClick={() => switchStudent('student-2')}
+                            className="ml-auto text-[11px] text-accent font-semibold hover:underline"
+                          >
+                            Switch to Birsa (Class 9) →
+                          </button>
+                        )}
+                      </div>
+                    </>
                   )}
-
-                  {/* Running total and what's left */}
-                  <div className="mt-2 flex items-baseline gap-2 border-t border-accent-dark/20 pt-2 text-xs">
-                    {recommendation.alreadyClaimed > 0 && (
-                      <>
-                        <span className="text-muted">So far: {formatINR(recommendation.alreadyClaimed)}/yr</span>
-                        <span className="text-muted">→</span>
-                      </>
-                    )}
-                    <span className="font-bold text-text">After this: {formatINR(recommendation.afterThisTotal)}/yr</span>
-                    <span className="flex-1" />
-                    {recommendation.afterThisRemaining > 0 && (
-                      <span className="text-[10px] text-muted">{recommendation.afterThisRemaining} more available</span>
-                    )}
-                  </div>
-
-                  <p className="text-[10px] text-muted mt-1.5 leading-relaxed">
-                    Rules are configurable by the Ministry. Values are indicative sample figures.
-                  </p>
-
-                  <div className="mt-2.5 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => openAdvisorApply(pick.id)}
-                      className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform"
-                      data-testid="advisor-apply-btn"
-                    >
-                      Apply for this scheme
-                    </button>
-                    <button
-                      type="button"
-                      onClick={runAdvisor}
-                      className="text-[11px] font-semibold text-muted underline underline-offset-2 active:opacity-70"
-                    >
-                      Run again
-                    </button>
-                  </div>
                 </div>
               )}
             </section>

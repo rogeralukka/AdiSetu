@@ -210,9 +210,19 @@ export function recommendNext(student, schemes, appliedIds = []) {
     // Nothing left to recommend — either all applied or all blocked
     const totalEligible = eligible.length;
     const totalApplied = alreadyAppliedEligible.length;
+    const topApplied = [...alreadyAppliedEligible].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
+    const unappliedEligible = eligible.filter((s) => !appliedIds.includes(s.id));
+    const topUnapplied = [...unappliedEligible].sort((a, b) => valueOf(b.id) - valueOf(a.id))[0];
+    const currentBest = topApplied ? { id: topApplied.id, value: valueOf(topApplied.id), kind: kindOf(topApplied.id) } : null;
+    const runnerUp = topUnapplied ? { id: topUnapplied.id, value: valueOf(topUnapplied.id), kind: kindOf(topUnapplied.id) } : null;
+    const gain = (currentBest && runnerUp && currentBest.value > runnerUp.value) ? currentBest.value - runnerUp.value : null;
+
     return {
       done: true,
       pick: null,
+      currentBest,
+      runnerUp,
+      gain,
       alreadyClaimed,
       totalApplied,
       totalEligible,
