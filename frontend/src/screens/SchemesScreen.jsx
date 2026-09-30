@@ -83,11 +83,31 @@ export default function SchemesScreen() {
   const filteredSchemes = unappliedSchemes.filter((scheme) => {
     const matchesFilter =
       activeFilter === 'All' || scheme.category === activeFilter;
-    const matchesSearch =
-      scheme.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      scheme.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      scheme.source.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
+    if (!matchesFilter) return false;
+
+    if (!searchQuery.trim()) return true;
+
+    const q = searchQuery.trim().toLowerCase();
+    const searchableText = [
+      scheme.shortName,
+      scheme.name,
+      scheme.desc,
+      scheme.source,
+      scheme.category,
+      scheme.fundingMinistry,
+      scheme.portal,
+      scheme.financialAssistance,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    // Match if full query is in searchableText
+    if (searchableText.includes(q)) return true;
+
+    // Match if all individual search terms appear in searchableText
+    const terms = q.split(/\s+/).filter(Boolean);
+    return terms.every((term) => searchableText.includes(term));
   });
 
   const handleBatchApply = () => {
