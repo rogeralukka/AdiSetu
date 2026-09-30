@@ -91,7 +91,24 @@ export function AppProvider({ children }) {
 
   const [schemes, setSchemes] = useState(initialSchemes);
   const [selectedSchemeIds, setSelectedSchemeIds] = useState([]);
-  const [applications, setApplications] = useState(initialApplications);
+  const [applications, setApplications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('adisetu_applications');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return initialApplications;
+  });
+
+  // Sync applications to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('adisetu_applications', JSON.stringify(applications));
+    } catch (e) {}
+  }, [applications]);
+
   const [documents, setDocuments] = useState(initialDocuments);
   const [notifications, setNotifications] = useState(initialNotifications);
   
@@ -150,19 +167,24 @@ export function AppProvider({ children }) {
   // Add single application. A student can avail only one scholarship/fellowship scheme at a time
   // (add-on grants may be held alongside a scholarship) - enforced here, not only in the batch UI,
   // so there is exactly one place applications are created and exactly one place the rule is checked.
-  const applyToScheme = (schemeId) => {
+  const applyToScheme = (schemeId, replaceConflict = false) => {
     const scheme = schemes.find((s) => s.id === schemeId);
     if (!scheme) return null;
 
-    // Check if already applied
-    const existing = applications.find((a) => a.schemeId === schemeId);
+    // Check if already applied by current student
+    const existing = applications.find((a) => a.schemeId === schemeId && a.studentId === currentStudent?.id);
     if (existing) return existing;
 
     const appliedIds = applications.filter((a) => a.studentId === currentStudent?.id).map((a) => a.schemeId);
     const blocked = conflictWith(appliedIds, schemeId, schemes);
     if (blocked) {
-      const blockerScheme = schemes.find((s) => s.id === blocked.blockerId);
-      return { conflict: { ...blocked, blockerName: blockerScheme?.shortName || blockerScheme?.name || blocked.blockerId } };
+      if (replaceConflict) {
+        // Automatically withdraw the conflicting application and proceed
+        setApplications((prev) => prev.filter((a) => !(a.studentId === currentStudent?.id && a.schemeId === blocked.blockerId)));
+      } else {
+        const blockerScheme = schemes.find((s) => s.id === blocked.blockerId);
+        return { conflict: { ...blocked, blockerName: blockerScheme?.shortName || blockerScheme?.name || blocked.blockerId } };
+      }
     }
 
     const newAppId = `app-${Date.now()}`;
@@ -170,7 +192,7 @@ export function AppProvider({ children }) {
       id: newAppId,
       studentId: currentStudent?.id,
       schemeId: scheme.id,
-      name: scheme.shortName,
+      name: scheme.shortName || scheme.name,
       source: scheme.source,
       applicationNumber: `${scheme.source}2026-${Math.floor(10000 + Math.random() * 90000)}`,
       statusLabel: "Submitted",
@@ -180,10 +202,15 @@ export function AppProvider({ children }) {
       stageNames: ["Submitted", "Verification", "Sanctioned", "Disbursed"],
       note: null,
       tag: null,
-      amount: scheme.category === "NFST" ? "₹37,000/month" : "₹13,500/year",
+      amount: scheme.category === "NFST" ? "₹37,000/month" : scheme.financialAssistance?.split('+')[0] || "₹13,500/year",
     };
 
-    setApplications((prev) => [newApplication, ...prev]);
+    setApplications((prev) => [
+      newApplication,
+      ...(replaceConflict && blocked
+        ? prev.filter((a) => !(a.studentId === currentStudent?.id && a.schemeId === blocked.blockerId))
+        : prev),
+    ]);
     setHasUnreadUpdates(true);
 
     // Update document usage references
@@ -193,7 +220,7 @@ export function AppProvider({ children }) {
           return {
             ...doc,
             usedInApplicationIds: [...new Set([...doc.usedInApplicationIds, newAppId])],
-            usedInNames: [...new Set([...doc.usedInNames, scheme.shortName])],
+            usedInNames: [...new Set([...doc.usedInNames, scheme.shortName || scheme.name])],
           };
         }
         return doc;
@@ -204,7 +231,7 @@ export function AppProvider({ children }) {
     const newNotif = {
       id: `notif-${Date.now()}`,
       kind: "scheme",
-      title: `Application Submitted — ${scheme.shortName}`,
+      title: `Application Submitted — ${scheme.shortName || scheme.name}`,
       body: `Your application has been registered under ${scheme.source} and forwarded to Institutional Verification.`,
       time: "Just now",
       relatedSchemeId: scheme.id,
@@ -212,6 +239,30 @@ export function AppProvider({ children }) {
     setNotifications((prev) => [newNotif, ...prev]);
 
     return newApplication;
+  };
+
+  // Withdraw an application by ID or schemeId
+  const withdrawApplication = (appIdOrSchemeId) => {
+    setApplications((prev) => prev.filter((a) => a.id !== appIdOrSchemeId && a.schemeId !== appIdOrSchemeId));
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        kind: "scheme",
+        title: "Application Withdrawn",
+        body: "Your previous application has been withdrawn. You can now apply for other schemes.",
+        time: "Just now",
+      },
+      ...prev,
+    ]);
+  };
+
+  // Reset applications to default state
+  const resetApplications = () => {
+    setApplications(initialApplications);
+    clearSchemeSelection();
+    try {
+      localStorage.removeItem('adisetu_applications');
+    } catch (e) {}
   };
 
   // Batch apply to multiple schemes. Same one-scheme-at-a-time rule as applyToScheme, checked against
@@ -467,6 +518,8 @@ export function AppProvider({ children }) {
         renewDocument,
         addDocument,
         switchStudent,
+        withdrawApplication,
+        resetApplications,
         toggleTheme,
         setLanguage,
         setHasUnreadUpdates,

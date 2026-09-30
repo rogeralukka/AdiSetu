@@ -145,13 +145,15 @@ export default function SchemeDetailScreen() {
               <span>{t('applicationSubmitted')}</span>
             </div>
           ) : blockedByExisting ? (
-            <div
-              className="w-full py-3.5 px-4 rounded-full text-xs font-bold bg-[#ECECE7] dark:bg-[#2A2926] text-muted flex items-center justify-center gap-2 cursor-not-allowed"
-              data-testid="detail-apply-blocked"
+            <button
+              type="button"
+              onClick={handleApplyClick}
+              className="w-full py-3.5 px-4 rounded-full text-xs font-bold bg-amber text-white shadow-card hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              data-testid="detail-apply-switch-btn"
             >
-              <AlertTriangle size={16} />
-              <span>Can't apply — one scheme at a time</span>
-            </div>
+              <span>Switch to this Scheme (Withdraw {blockerScheme?.shortName || blockerScheme?.name})</span>
+              <ArrowRight size={15} />
+            </button>
           ) : (
             <button
               type="button"

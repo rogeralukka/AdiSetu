@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { getTranslatedStatus, getTranslatedStage } from '../data/translations';
 import TopBar from '../components/TopBar';
@@ -19,12 +19,14 @@ import {
 
 export default function UpdatesScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     applications,
     notifications,
     currentStudent,
     riskBannerDismissed,
     renewDocument,
+    withdrawApplication,
     setHasUnreadUpdates,
     t
   } = useApp();
@@ -40,12 +42,15 @@ export default function UpdatesScreen() {
   const showRiskBanner = !currentStudent.bankAccount.dbtSeeded && !riskBannerDismissed;
   const hasUrgentAlerts = showRiskBanner || notifications.some((n) => n.kind === 'alert');
 
+  // Filter applications by current student
+  const studentApps = applications.filter((app) => !app.studentId || app.studentId === currentStudent?.id);
+
   // Driven by mock data counts
   const alertsCount = (showRiskBanner ? 1 : 0) + notifications.length;
-  const applicationsCount = applications.length;
+  const applicationsCount = studentApps.length;
 
-  // Default to whichever tab has something urgent, otherwise default to Applications & Progress
-  const [activeTab, setActiveTab] = useState(() => (hasUrgentAlerts ? 'alerts' : 'applications'));
+  // Default to location state tab if provided, otherwise alerts if urgent, otherwise applications
+  const [activeTab, setActiveTab] = useState(() => (location.state?.tab || (hasUrgentAlerts ? 'alerts' : 'applications')));
 
   const handleRenew = (docId) => {
     setRenewingDocId(docId);
@@ -211,7 +216,7 @@ export default function UpdatesScreen() {
         {/* Tab Content 2: APPLICATIONS & PROGRESS (Application cards with steppers) */}
         {activeTab === 'applications' && (
           <div className="space-y-3.5 animate-in fade-in duration-150">
-            {applications.map((app) => {
+            {studentApps.map((app) => {
               const isActionNeeded = app.statusLabel === "Action Needed";
               const isDisbursed = app.statusLabel === "Disbursed";
               const isInProgress = app.statusLabel === "In Progress";
@@ -335,11 +340,24 @@ export default function UpdatesScreen() {
                       </span>
                     </div>
                   )}
+
+                  {/* Footer: Date + Withdraw button */}
+                  <div className="pt-2 flex items-center justify-between border-t border-border/50 text-[11px] text-muted">
+                    <span>Applied: {app.appliedDate || 'Recent'}</span>
+                    <button
+                      type="button"
+                      onClick={() => withdrawApplication(app.id)}
+                      className="text-muted hover:text-rust underline text-[11px] font-medium transition-colors"
+                      data-testid={`withdraw-app-${app.id}`}
+                    >
+                      Withdraw application
+                    </button>
+                  </div>
                 </div>
               );
             })}
 
-            {applications.length === 0 && (
+            {studentApps.length === 0 && (
               <div className="text-center py-8 bg-surface rounded-card p-5 border border-border">
                 <p className="text-xs text-muted">
                   No active applications yet. Browse recommended scholarships on the Schemes tab.

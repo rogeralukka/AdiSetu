@@ -94,7 +94,7 @@ export default function ApplyModal({
   const handleViewUpdates = () => {
     onClose();
     if (onSuccessDone) onSuccessDone();
-    navigate('/updates');
+    navigate('/updates', { state: { tab: 'applications' } });
   };
 
   const handleDone = () => {
@@ -135,13 +135,30 @@ export default function ApplyModal({
                   tab to see your best option.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full py-3.5 rounded-full bg-accent text-white text-xs font-bold shadow-card hover:opacity-95 active:scale-95 transition-all"
-              >
-                Close
-              </button>
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const result = applyToScheme(targetSchemes[0].id, true);
+                    if (result && !result.conflict) {
+                      setConflictInfo(null);
+                      setCreatedApps([result]);
+                      setIsSuccess(true);
+                    }
+                  }}
+                  className="w-full py-3.5 rounded-full bg-accent text-white text-xs font-bold shadow-card hover:opacity-95 active:scale-95 transition-all"
+                  data-testid="modal-switch-apply-btn"
+                >
+                  Switch &amp; Apply (Withdraw {conflictInfo.blockerName})
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 rounded-full bg-[#ECECE7] dark:bg-[#2A2926] text-text text-xs font-semibold hover:bg-border/80 active:scale-95 transition-all"
+                >
+                  Keep {conflictInfo.blockerName} &amp; Cancel
+                </button>
+              </div>
             </div>
           ) : isSuccess ? (
             /* Success confirmation screen inside modal */
