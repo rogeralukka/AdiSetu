@@ -132,7 +132,24 @@ export function AppProvider({ children }) {
   }, [theme]);
 
   const currentStudent = students.find((s) => s.id === currentStudentId) || students[0];
-  const studentDocuments = documents.filter((d) => (d.studentId || 'student-1') === currentStudent?.id);
+  // "Used in" is worked out from the student's real applications every time, never stored: a document
+  // is used in an application when that scheme asks for it. So it stays right after a page reload,
+  // a withdrawal or a switch, and one student's applications never show up in another's wallet.
+  const myApplications = applications.filter((a) => a.studentId === currentStudent?.id);
+  const studentDocuments = documents
+    .filter((d) => (d.studentId || 'student-1') === currentStudent?.id)
+    .map((doc) => {
+      const usedIn = doc.status === 'Expired'
+        ? []
+        : myApplications.filter((a) =>
+            (schemes.find((sc) => sc.id === a.schemeId)?.requiredDocuments || []).some((r) => r.id === doc.id)
+          );
+      return { ...doc, usedInApplicationIds: usedIn.map((a) => a.id), usedInNames: usedIn.map((a) => a.name) };
+    });
+  // Alerts belong to one student: Priya's certificate alert must not show on Birsa's Updates tab.
+  const studentNotifications = notifications.filter((n) => (n.studentId || 'student-1') === currentStudent?.id);
+  // A wallet document belongs to one student; documents without a studentId are Priya's (student-1).
+  const isMine = (d) => (d.studentId || 'student-1') === currentStudent?.id;
 
   // Translation function:
   // When Google Translate is actively translating the page for a supported language,
@@ -199,7 +216,7 @@ export function AppProvider({ children }) {
       schemeId: scheme.id,
       name: scheme.shortName || scheme.name,
       source: scheme.source,
-      applicationNumber: `${scheme.source}2026-${Math.floor(10000 + Math.random() * 90000)}`,
+      applicationNumber: `${scheme.source.split(' ')[0]}2026-${Math.floor(10000 + Math.random() * 90000)}`,
       statusLabel: "Submitted",
       appliedDate: "Today (27 Sep 2026)",
       lastUpdated: "Just now",
@@ -218,20 +235,6 @@ export function AppProvider({ children }) {
     ]);
     setHasUnreadUpdates(true);
 
-    // Update document usage references
-    setDocuments((prevDocs) =>
-      prevDocs.map((doc) => {
-        if (doc.status === "Verified") {
-          return {
-            ...doc,
-            usedInApplicationIds: [...new Set([...doc.usedInApplicationIds, newAppId])],
-            usedInNames: [...new Set([...doc.usedInNames, scheme.shortName || scheme.name])],
-          };
-        }
-        return doc;
-      })
-    );
-
     // Add notification
     const newNotif = {
       id: `notif-${Date.now()}`,
@@ -240,6 +243,7 @@ export function AppProvider({ children }) {
       body: `Your application has been registered under ${scheme.source} and forwarded to Institutional Verification.`,
       time: "Just now",
       relatedSchemeId: scheme.id,
+      studentId: currentStudent?.id,
     };
     setNotifications((prev) => [newNotif, ...prev]);
 
@@ -248,7 +252,10 @@ export function AppProvider({ children }) {
 
   // Withdraw an application by ID or schemeId
   const withdrawApplication = (appIdOrSchemeId) => {
-    setApplications((prev) => prev.filter((a) => a.id !== appIdOrSchemeId && a.schemeId !== appIdOrSchemeId));
+    // Only this student's own application can be withdrawn.
+    const isTarget = (a) =>
+      a.studentId === currentStudent?.id && (a.id === appIdOrSchemeId || a.schemeId === appIdOrSchemeId);
+    setApplications((prev) => prev.filter((a) => !isTarget(a)));
     setNotifications((prev) => [
       {
         id: `notif-${Date.now()}`,
@@ -256,6 +263,7 @@ export function AppProvider({ children }) {
         title: "Application Withdrawn",
         body: "Your previous application has been withdrawn. You can now apply for other schemes.",
         time: "Just now",
+        studentId: currentStudent?.id,
       },
       ...prev,
     ]);
@@ -279,7 +287,7 @@ export function AppProvider({ children }) {
     const acceptedIds = [];
 
     targetSchemes.forEach((scheme) => {
-      const existing = applications.find((a) => a.schemeId === scheme.id);
+      const existing = applications.find((a) => a.schemeId === scheme.id && a.studentId === currentStudent?.id);
       const blocked = !existing && conflictWith([...existingAppliedIds, ...acceptedIds], scheme.id, schemes);
       if (!existing && !blocked) {
         acceptedIds.push(scheme.id);
@@ -290,7 +298,7 @@ export function AppProvider({ children }) {
           schemeId: scheme.id,
           name: scheme.shortName,
           source: scheme.source,
-          applicationNumber: `${scheme.source}2026-${Math.floor(10000 + Math.random() * 90000)}`,
+          applicationNumber: `${scheme.source.split(' ')[0]}2026-${Math.floor(10000 + Math.random() * 90000)}`,
           statusLabel: "Submitted",
           appliedDate: "Today (27 Sep 2026)",
           lastUpdated: "Just now",
@@ -309,21 +317,7 @@ export function AppProvider({ children }) {
       setHasUnreadUpdates(true);
       clearSchemeSelection();
 
-      // Update document references
       const appNames = createdApps.map((a) => a.name);
-      const appIds = createdApps.map((a) => a.id);
-      setDocuments((prevDocs) =>
-        prevDocs.map((doc) => {
-          if (doc.status === "Verified") {
-            return {
-              ...doc,
-              usedInApplicationIds: [...new Set([...doc.usedInApplicationIds, ...appIds])],
-              usedInNames: [...new Set([...doc.usedInNames, ...appNames])],
-            };
-          }
-          return doc;
-        })
-      );
 
       // Notification
       const newNotif = {
@@ -332,6 +326,7 @@ export function AppProvider({ children }) {
         title: `Batch Application Submitted (${createdApps.length} Schemes)`,
         body: `Applied to ${appNames.join(', ')} with your verified document wallet.`,
         time: "Just now",
+        studentId: currentStudent?.id,
       };
       setNotifications((prev) => [newNotif, ...prev]);
     }
@@ -343,7 +338,7 @@ export function AppProvider({ children }) {
   const renewDocument = (docId) => {
     setDocuments((prev) =>
       prev.map((doc) => {
-        if (doc.id === docId) {
+        if (doc.id === docId && isMine(doc)) {
           return {
             ...doc,
             status: "Verified",
@@ -361,7 +356,7 @@ export function AppProvider({ children }) {
     if (docId === "doc-caste") {
       setNotifications((prev) =>
         prev.map((n) =>
-          n.relatedDocId === "doc-caste"
+          n.relatedDocId === "doc-caste" && (n.studentId || 'student-1') === currentStudent?.id
             ? { ...n, title: "Caste Certificate Renewed & Verified", body: "New certificate valid for 3 years attached to your wallet." }
             : n
         )
@@ -373,6 +368,7 @@ export function AppProvider({ children }) {
   const addDocument = (docData) => {
     const newDoc = {
       id: `doc-${Date.now()}`,
+      studentId: currentStudent?.id,
       name: docData.name,
       docNumber: docData.docNumber || `JH/NEW/${Math.floor(1000 + Math.random() * 9000)}`,
       status: "Verified",
@@ -471,6 +467,7 @@ export function AppProvider({ children }) {
       title: "Aadhaar–bank link confirmed",
       body: "You confirmed your Aadhaar–bank link on NPCI's BASE portal. Post-Matric is back in progress.",
       time: "Just now",
+      studentId: currentStudent?.id,
     };
     setNotifications((prev) => [newNotif, ...prev]);
   };
@@ -512,7 +509,7 @@ export function AppProvider({ children }) {
         selectedSchemeIds,
         applications,
         documents: studentDocuments,
-        notifications,
+        notifications: studentNotifications,
         hasUnreadUpdates,
         riskBannerDismissed,
         toggleSchemeSelection,

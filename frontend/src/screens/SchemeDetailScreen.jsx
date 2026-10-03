@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { getTranslatedStatus } from '../data/translations';
 import { conflictWith } from '../data/schemeRules';
+import { walletState, docsNeedingAttention as findDocsNeedingAttention } from '../data/walletHelpers';
 import TopBar from '../components/TopBar';
 import ChatSheet from '../components/ChatSheet';
 import ApplyModal from '../components/ApplyModal';
@@ -42,17 +43,10 @@ export default function SchemeDetailScreen() {
     return 'bg-[#FBECE8] text-[#9E3D24] dark:bg-[#361E18] dark:text-[#F6BBAA]';
   };
 
-  // Check document status to determine state-colored apply button (Fix 3)
-  const docsNeedingAttention = scheme.requiredDocuments.filter((d) => {
-    if (d.status === 'Needs Confirmation' || d.status === 'Pending') {
-      return true;
-    }
-    const matchingWalletDoc = documents.find((w) => w.id === d.id);
-    if (matchingWalletDoc && matchingWalletDoc.status === 'Expired') {
-      return true;
-    }
-    return false;
-  });
+  // Check document status to determine state-colored apply button (Fix 3).
+  // A document counts as a problem when the scheme still waits on it, or when the signed-in
+  // student's own wallet holds it expired / does not hold it at all.
+  const docsNeedingAttention = findDocsNeedingAttention(scheme.requiredDocuments, documents);
 
   const isAllDocsReady = docsNeedingAttention.length === 0;
   const attentionCount = docsNeedingAttention.length;
@@ -207,7 +201,19 @@ export default function SchemeDetailScreen() {
 
           <div className="space-y-2 pt-1">
             {scheme.requiredDocuments.map((doc, idx) => {
-              const needsAttention = doc.status === 'Needs Confirmation' || doc.status === 'Pending';
+              const { state, wallet } = walletState(doc, documents);
+              const needsAttention =
+                doc.status === 'Needs Confirmation' || doc.status === 'Pending' || state === 'expired' || state === 'missing';
+
+              // Sub-line under the document name: say where it comes from for THIS student.
+              const subLine =
+                state === 'reused'
+                  ? 'Pre-verified from student wallet'
+                  : state === 'expired'
+                    ? 'Expired in your wallet. Renew it in Documents.'
+                    : state === 'missing'
+                      ? 'Not in your wallet yet. Add it in Documents.'
+                      : 'Attached from e-KYC record';
 
               return (
                 <div
@@ -223,13 +229,13 @@ export default function SchemeDetailScreen() {
                         {doc.name}
                       </div>
                       <div className="text-[10px] text-muted">
-                        {doc.reused ? "Pre-verified from student wallet" : "Attached from e-KYC record"}
+                        {subLine}
                       </div>
                     </div>
                   </div>
 
-                  {/* Reused Green Tag or Status */}
-                  {doc.reused ? (
+                  {/* Reused Green Tag, or the real state of the document */}
+                  {state === 'reused' ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-tag bg-green-soft text-green text-[10px] font-mono font-bold tracking-wider uppercase">
                       <CheckCircle2 size={11} />
                       {t('reused')}
@@ -238,7 +244,11 @@ export default function SchemeDetailScreen() {
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-tag text-[10px] font-mono font-semibold ${
                       needsAttention ? 'bg-amber-soft text-amber' : 'bg-surface text-muted'
                     }`}>
-                      {getTranslatedStatus(doc.status, t)}
+                      {state === 'expired'
+                        ? getTranslatedStatus('Expired', t)
+                        : state === 'missing'
+                          ? 'Not in wallet'
+                          : getTranslatedStatus(doc.status, t)}
                     </span>
                   )}
                 </div>

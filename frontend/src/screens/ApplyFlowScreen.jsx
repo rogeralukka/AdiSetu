@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import TopBar from '../components/TopBar';
+import { getTranslatedStatus } from '../data/translations';
+import { walletState, requiredDocsFor } from '../data/walletHelpers';
 import {
   UserCheck,
   FileCheck,
@@ -246,36 +248,55 @@ export default function ApplyFlowScreen() {
                 </div>
 
                 <p className="text-xs text-muted leading-relaxed">
-                  The following documents are automatically linked from your verified wallet. No scans or physical copies are required.
+                  Documents already in your wallet are linked automatically, so you don't scan or upload them again.
                 </p>
 
                 <div className="space-y-2.5">
-                  {documents.slice(0, 3).map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="bg-bg rounded-lg p-3 flex items-center justify-between border border-border/60"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-accent">
-                          <FileCheck size={16} />
-                        </div>
-                        <div>
-                          <div className="text-xs font-semibold text-text">
-                            {doc.name}
+                  {requiredDocsFor(targetSchemes).map((req) => {
+                    const { state, wallet } = walletState(req, documents);
+                    const warn = state === 'expired' || state === 'missing' || req.status === 'Pending' || req.status === 'Needs Confirmation';
+                    return (
+                      <div
+                        key={req.id}
+                        className="bg-bg rounded-lg p-3 flex items-center justify-between border border-border/60"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-accent">
+                            <FileCheck size={16} />
                           </div>
-                          <div className="text-[10px] font-mono text-muted">
-                            {doc.docNumber}
+                          <div>
+                            <div className="text-xs font-semibold text-text">
+                              {req.name}
+                            </div>
+                            <div className="text-[10px] font-mono text-muted">
+                              {wallet
+                                ? wallet.docNumber
+                                : state === 'missing'
+                                  ? 'Add it in Documents'
+                                  : 'Attached for this scheme'}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Green Reused Tag */}
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-tag bg-green-soft text-green text-[10px] font-mono font-bold uppercase tracking-wider">
-                        <CheckCircle2 size={11} />
-                        {t('reused')}
-                      </span>
-                    </div>
-                  ))}
+                        {state === 'reused' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-tag bg-green-soft text-green text-[10px] font-mono font-bold uppercase tracking-wider">
+                            <CheckCircle2 size={11} />
+                            {t('reused')}
+                          </span>
+                        ) : (
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-tag text-[10px] font-mono font-semibold uppercase tracking-wider ${
+                            warn ? 'bg-amber-soft text-amber' : 'bg-surface text-muted'
+                          }`}>
+                            {state === 'expired'
+                              ? getTranslatedStatus('Expired', t)
+                              : state === 'missing'
+                                ? 'Not in wallet'
+                                : getTranslatedStatus(req.status, t)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="pt-2 grid grid-cols-2 gap-3">

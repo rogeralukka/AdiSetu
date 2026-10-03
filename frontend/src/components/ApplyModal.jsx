@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Modal from './Modal';
+import { getTranslatedStatus } from '../data/translations';
+import { walletState, requiredDocsFor } from '../data/walletHelpers';
 import {
   X,
   UserCheck,
@@ -310,32 +312,51 @@ export default function ApplyModal({
                   </div>
 
                   <div className="space-y-2.5">
-                    {documents.slice(0, 3).map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="bg-bg rounded-lg p-3 flex items-center justify-between border border-border/60"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-accent flex-shrink-0">
-                            <FileCheck size={16} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-semibold text-text truncate">
-                              {doc.name}
+                    {requiredDocsFor(targetSchemes).map((req) => {
+                      const { state, wallet } = walletState(req, documents);
+                      const warn = state === 'expired' || state === 'missing' || req.status === 'Pending' || req.status === 'Needs Confirmation';
+                      return (
+                        <div
+                          key={req.id}
+                          className="bg-bg rounded-lg p-3 flex items-center justify-between border border-border/60"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-accent flex-shrink-0">
+                              <FileCheck size={16} />
                             </div>
-                            <div className="text-[10px] font-mono text-muted truncate">
-                              {doc.docNumber}
+                            <div className="min-w-0">
+                              <div className="text-xs font-semibold text-text truncate">
+                                {req.name}
+                              </div>
+                              <div className="text-[10px] font-mono text-muted truncate">
+                                {wallet
+                                  ? wallet.docNumber
+                                  : state === 'missing'
+                                    ? 'Add it in Documents'
+                                    : 'Attached for this scheme'}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Green Reused Tag */}
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-tag bg-green-soft text-green text-[10px] font-mono font-bold uppercase tracking-wider flex-shrink-0">
-                          <CheckCircle2 size={11} />
-                          {t('reused')}
-                        </span>
-                      </div>
-                    ))}
+                          {state === 'reused' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-tag bg-green-soft text-green text-[10px] font-mono font-bold uppercase tracking-wider flex-shrink-0">
+                              <CheckCircle2 size={11} />
+                              {t('reused')}
+                            </span>
+                          ) : (
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-tag text-[10px] font-mono font-semibold uppercase tracking-wider flex-shrink-0 ${
+                              warn ? 'bg-amber-soft text-amber' : 'bg-surface text-muted'
+                            }`}>
+                              {state === 'expired'
+                                ? getTranslatedStatus('Expired', t)
+                                : state === 'missing'
+                                  ? 'Not in wallet'
+                                  : getTranslatedStatus(req.status, t)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Navigation Buttons (50/50 Equal Width Grid with 12px gap) */}

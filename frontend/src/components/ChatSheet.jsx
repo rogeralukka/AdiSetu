@@ -5,12 +5,15 @@ import Modal from './Modal';
 import { MessageCircle, Send, Bot, Sparkles, HelpCircle } from 'lucide-react';
 
 export default function ChatSheet() {
-  const { selectedSchemeIds } = useApp();
+  const { selectedSchemeIds, currentStudent } = useApp();
+  // Questions about one student's own application are shown only to that student.
+  const visibleQuestions = cannedQuestions.filter((q) => !q.studentId || q.studentId === currentStudent?.id);
+  const ownsQuestion = (q) => !q.studentId || q.studentId === currentStudent?.id;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       sender: 'bot',
-      text: "Johar! I am AdiSetu Assistant (connected to JAGO knowledge base). How can I help you with your tribal scholarship applications, DBT bank seeding, or document wallet today?",
+      text: "Johar! I am the AdiSetu Assistant (demo with sample answers). How can I help you with your tribal scholarship applications, DBT bank seeding, or document wallet today?",
       time: "Just now",
     },
   ]);
@@ -62,16 +65,16 @@ export default function ChatSheet() {
     const lower = query.toLowerCase();
     let replyText = "For specific scholarship eligibility or DBT status inquiries, you can check your Updates tab or verify your documents directly in the Document Wallet.";
     
-    if (lower.includes('action needed') || lower.includes('dbt') || lower.includes('aadhaar') || lower.includes('bank')) {
+    if (ownsQuestion(cannedQuestions[0]) && (lower.includes('action needed') || lower.includes('dbt') || lower.includes('aadhaar') || lower.includes('bank'))) {
       replyText = cannedQuestions[0].answer;
-    } else if (lower.includes('caste') || lower.includes('document') || lower.includes('reuse') || lower.includes('expire')) {
+    } else if (ownsQuestion(cannedQuestions[1]) && (lower.includes('caste') || lower.includes('document') || lower.includes('reuse') || lower.includes('expire'))) {
       replyText = cannedQuestions[1].answer;
     } else if (lower.includes('batch') || lower.includes('multiple') || lower.includes('select')) {
       replyText = cannedQuestions[2].answer;
     } else if (lower.includes('top class') || lower.includes('income') || lower.includes('limit') || lower.includes('iit')) {
       replyText = cannedQuestions[3].answer;
     } else {
-      replyText = `Thank you for your question. Under the Ministry of Tribal Affairs guidelines, all ST scholarships (Post-Matric, Pre-Matric, Top Class, NOS, and NFST) are centralized in AdiSetu. You can submit single or batch applications directly through your dashboard.`;
+      replyText = `Thank you for your question. AdiSetu brings ST scholarships (Post-Matric, Pre-Matric, Top Class, NFST, NOS and other schemes) into one place. You can apply to one scheme, or select several, from your Schemes tab. A student can hold only one scholarship at a time.`;
     }
 
     const botMsg = {
@@ -109,7 +112,7 @@ export default function ChatSheet() {
         headerShadow={true}
         headerExtra={
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-accent-soft text-accent-dark font-semibold">
-            JAGO AI
+            DEMO
           </span>
         }
         maxWidth="max-w-md"
@@ -171,7 +174,7 @@ export default function ChatSheet() {
                 <span>Frequently Asked Questions</span>
               </div>
               <div className="space-y-1.5">
-                {cannedQuestions.map((q) => (
+                {visibleQuestions.map((q) => (
                   <button
                     key={q.id}
                     type="button"

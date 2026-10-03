@@ -116,13 +116,13 @@ export const initialExceptionQueue = [
     subTribe: "Santhal",
     classGrade: "Ph.D Scholar (Botany, Yr 2)",
     institute: "Ranchi University, Morabadi Campus",
-    applicationId: "NSP2026-90422",
+    applicationId: "SFMP2026-90422",
     schemeId: "nfst",
-    schemeName: "National Fellowship and Scholarship for Higher Education (NFST)",
-    source: "NSP",
-    issueType: "Aadhaar Biometric Re-Auth Due",
+    schemeName: "National Fellowship for Higher Education of ST Students (NFST)",
+    source: "SFMP",
+    issueType: "Aadhaar Name Mismatch",
     issueSeverity: "review",
-    issueSummary: "UIDAI 5-year periodic verification cycle due for doctoral research stipend",
+    issueSummary: "Name on Aadhaar differs from the name on the Ph.D. registration letter; fellowship payment is held until they match",
     daysPending: 3,
     dateFlagged: "24 Sep 2026",
     bankDetails: {
@@ -132,7 +132,7 @@ export const initialExceptionQueue = [
       dbtSeeded: true,
       aadhaarLinked: true
     },
-    digilockerStatus: "Face-RD authentication completed on Umang app on 26 Sep 2026.",
+    digilockerStatus: "Updated Aadhaar fetched from DigiLocker on 26 Sep 2026; the name now matches the university record.",
     status: "Pending"
   },
   {
@@ -148,7 +148,7 @@ export const initialExceptionQueue = [
     source: "NSP",
     issueType: "Income Proof Confirmation",
     issueSeverity: "review",
-    issueSummary: "Family income ₹2,10,000 exceeds old ceiling ₹2L; requires manual rule check against 2026 cap (₹6L)",
+    issueSummary: "Income certificate shows ₹2,10,000; officer to confirm it against the Top Class income limit of ₹6 lakh",
     daysPending: 1,
     dateFlagged: "26 Sep 2026",
     bankDetails: {
@@ -158,7 +158,7 @@ export const initialExceptionQueue = [
       dbtSeeded: true,
       aadhaarLinked: true
     },
-    digilockerStatus: "Form 16 / Tehsildar certificate verified. Well within revised ₹6.0L guideline.",
+    digilockerStatus: "Tehsildar income certificate verified. Within the ₹6 lakh Top Class limit.",
     status: "Pending"
   },
   {
@@ -226,7 +226,7 @@ export const initialExceptionQueue = [
     source: "NSP",
     issueType: "Hostel Warden Attendance Gap",
     issueSeverity: "review",
-    issueSummary: "73% attendance reported vs 75% norm; medical exemption certificate pending",
+    issueSummary: "Attendance reported at 73%, below the scheme minimum; medical exemption certificate pending",
     daysPending: 3,
     dateFlagged: "24 Sep 2026",
     bankDetails: {
@@ -252,7 +252,7 @@ export const initialExceptionQueue = [
     source: "NSP",
     issueType: "Duplicate Household Application Alert",
     issueSeverity: "review",
-    issueSummary: "Same ration card / Jan-Aadhaar reference cited by sibling; quota validation needed",
+    issueSummary: "Same ration card / Samagra ID cited by a sibling; household check needed",
     daysPending: 2,
     dateFlagged: "25 Sep 2026",
     bankDetails: {
@@ -262,7 +262,7 @@ export const initialExceptionQueue = [
       dbtSeeded: true,
       aadhaarLinked: true
     },
-    digilockerStatus: "Sibling is in Class 9 (Pre-Matric); distinct scheme quota permitted under MoTA §4.2.",
+    digilockerStatus: "Sibling is in Class 9 (Pre-Matric), a different scheme from this Post-Matric application. No overlap found.",
     status: "Pending"
   },
   {
@@ -278,7 +278,7 @@ export const initialExceptionQueue = [
     source: "NSP",
     issueType: "Caste Certificate Name Typo",
     issueSeverity: "review",
-    issueSummary: "Aadhaar spells 'Kujur', caste record spells 'Kujoor'; soundex match 96%",
+    issueSummary: "Aadhaar spells 'Kujur', caste record spells 'Kujoor'; names match 96%",
     daysPending: 4,
     dateFlagged: "23 Sep 2026",
     bankDetails: {
@@ -312,8 +312,8 @@ export const initialContinuations = [
     studentName: "Amit Soren",
     classOrYear: "Doctoral Research Year 2 (Botany)",
     institute: "Ranchi University, Morabadi Campus",
-    schemeName: "National Fellowship and Scholarship for Higher Education (NFST)",
-    source: "NSP",
+    schemeName: "National Fellowship for Higher Education of ST Students (NFST)",
+    source: "SFMP",
     lastConfirmed: "15 Mar 2026",
     dueDate: "31 Oct 2026",
     verifiedStats: "Supervisor Progress Report: Satisfactory · RAC Approved",
@@ -364,8 +364,8 @@ export const initialContinuations = [
     studentName: "Karan Bodra",
     classOrYear: "Ph.D. Metallurgical Engineering (Year 2)",
     institute: "NIT Rourkela, Sundargarh (Odisha)",
-    schemeName: "National Fellowship (NFST Scheme)",
-    source: "NSP",
+    schemeName: "National Fellowship for Higher Education of ST Students (NFST)",
+    source: "SFMP",
     lastConfirmed: "10 Feb 2026",
     dueDate: "15 Nov 2026",
     verifiedStats: "8.9 CGPA · Departmental Endorsement Verified",
@@ -405,7 +405,7 @@ export const initialEligibilityCriteria = [
     id: "pm",
     schemeCode: "MoTA-ST-PMS",
     name: "Post-Matric Scholarship for ST Students",
-    source: "NSP / State portal",
+    source: "NSP",
     annualIncomeCap: "₹2,50,000",
     incomeCapNumeric: 250000,
     targetClasses: "Class 11 to postgraduate (recognised courses in India)",
@@ -419,7 +419,7 @@ export const initialEligibilityCriteria = [
     id: "pre",
     schemeCode: "MoTA-ST-PRE",
     name: "Pre-Matric Scholarship for ST Students",
-    source: "NSP / State portal",
+    source: "NSP",
     annualIncomeCap: "₹2,50,000",
     incomeCapNumeric: 250000,
     targetClasses: "Class 9 and Class 10 (government or recognised schools)",
@@ -447,7 +447,7 @@ export const initialEligibilityCriteria = [
     id: "nfst",
     schemeCode: "MoTA-ST-NFST",
     name: "National Fellowship for Higher Education of ST Students (NFST)",
-    source: "NSP",
+    source: "SFMP",
     annualIncomeCap: "No income limit",
     incomeCapNumeric: 0,
     targetClasses: "Full-time Ph.D. scholars (750 new fellowships a year)",

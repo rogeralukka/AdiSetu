@@ -107,10 +107,10 @@ export default function AdminDashboardScreen() {
   // Bookmarks state (pre-seeded with demo IDs)
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     try {
-      const saved = localStorage.getItem('adisetu_admin_bookmarks');
+      const saved = localStorage.getItem('adisetu_admin_bookmarks_v2');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return ['NSP2026-89211', 'NSP2026-73104', 'NSP2026-90422'];
+    return ['NSP2026-12883', 'NSP2026-73104', 'SFMP2026-90422'];
   });
 
   const toggleBookmark = (id, studentName) => {
@@ -118,7 +118,7 @@ export default function AdminDashboardScreen() {
       const exists = prev.includes(id);
       const next = exists ? prev.filter((item) => item !== id) : [...prev, id];
       try {
-        localStorage.setItem('adisetu_admin_bookmarks', JSON.stringify(next));
+        localStorage.setItem('adisetu_admin_bookmarks_v2', JSON.stringify(next));
       } catch (e) {}
       showToast(exists ? `Removed ${studentName || id} from Bookmarks` : `Saved ${studentName || id} to Bookmarks`);
       return next;
@@ -1377,7 +1377,7 @@ export default function AdminDashboardScreen() {
                     </div>
                     <div className="text-[11px] text-green flex items-center gap-1 font-semibold">
                       <TrendingUp size={12} />
-                      <span>-99.2% vs manual NSP queue</span>
+                      <span>Sample figure</span>
                     </div>
                   </div>
 
@@ -1506,7 +1506,7 @@ export default function AdminDashboardScreen() {
                     <div className="p-3 rounded-lg bg-bg border border-border/60 text-xs text-muted flex items-start gap-2">
                       <Info size={15} className="text-accent flex-shrink-0 mt-0.5" />
                       <span>
-                        92% of Aadhaar-bank unseeded flags are automatically resolved through student Umang/DigiLocker consent callbacks without manual bank branch visits.
+                        Aadhaar–bank flags clear once the student confirms the link on NPCI's BASE portal. No bank branch visit is needed.
                       </span>
                     </div>
                   </div>

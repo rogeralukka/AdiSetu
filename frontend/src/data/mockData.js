@@ -433,6 +433,58 @@ export const initialDocuments = [
     usedInNames: [],
     canRenew: true,
   },
+
+  // ---- Birsa's own wallet (student-2). Each student's wallet is separate; these have the same ids as
+  // Priya's because scheme pages ask for documents by id ("doc-caste"), and the app looks them up
+  // in the wallet of whichever student is signed in. Birsa has not applied yet, so nothing is "used in".
+  {
+    id: "doc-caste",
+    studentId: "student-2",
+    name: "Caste Certificate",
+    docNumber: "JH/ST/2023/88220",
+    status: "Verified",
+    tone: "green",
+    expiresOn: "Valid till 09 Oct 2028",
+    expiryDays: 736,
+    issuer: "Revenue & Land Reforms Dept, Govt of Jharkhand",
+    issuedOn: "10 Oct 2023",
+    verifiedBy: "State Tribal Welfare e-Pramaan",
+    usedInApplicationIds: [],
+    usedInNames: [],
+    canRenew: false,
+  },
+  {
+    id: "doc-income",
+    studentId: "student-2",
+    name: "Income Certificate",
+    docNumber: "JH/INC/2026/41029",
+    status: "Verified",
+    tone: "green",
+    expiresOn: "Valid till 30 Jun 2027",
+    expiryDays: 276,
+    issuer: "Office of the Circle Officer, Bero, Ranchi",
+    issuedOn: "01 Jul 2026",
+    verifiedBy: "DigiLocker Integration",
+    usedInApplicationIds: [],
+    usedInNames: [],
+    canRenew: false,
+  },
+  {
+    id: "doc-aadhaar",
+    studentId: "student-2",
+    name: "Aadhaar Card",
+    docNumber: "XXXX-XXXX-5308",
+    status: "Verified",
+    tone: "green",
+    expiresOn: "Lifetime Validity",
+    expiryDays: null,
+    issuer: "Unique Identification Authority of India (UIDAI)",
+    issuedOn: "04 Jun 2019",
+    verifiedBy: "UIDAI e-KYC Verified",
+    usedInApplicationIds: [],
+    usedInNames: [],
+    canRenew: false,
+  },
 ];
 
 export const initialNotifications = [
@@ -443,6 +495,7 @@ export const initialNotifications = [
     body: "Renew before Oct 09 to avoid verification delays in your Post-Matric application.",
     time: "2h ago",
     relatedDocId: "doc-caste",
+    studentId: "student-1",
   },
   {
     id: "notif-2",
@@ -451,6 +504,7 @@ export const initialNotifications = [
     body: "Pre-Matric Scholarship 2026–27 applications are now open for Class 9–10 ST students.",
     time: "1d ago",
     relatedSchemeId: "pre",
+    studentId: "student-2", // Class 9-10 notice belongs on Birsa's feed, not Priya's (Class 12)
   },
 ];
 
@@ -460,12 +514,14 @@ export const cannedQuestions = [
     question: "Why does my Post-Matric Scholarship say 'Action Needed'?",
     answer: "Your Post-Matric application shows a warning: your Aadhaar–bank link for DBT isn't confirmed. Scholarship money is paid only into a bank account linked to your Aadhaar. Check or fix it on NPCI's BASE portal (npci.org.in → Consumer → BASE) or at your bank branch, then tap Resolve on the application.",
     tags: ["DBT", "Aadhaar", "Post-Matric"],
+    studentId: "student-1", // about Priya's Post-Matric application
   },
   {
     id: "q2",
     question: "Can I use my Caste Certificate for multiple scholarships?",
     answer: "Yes! AdiSetu stores your verified Caste Certificate in your unified Document Wallet. When you apply for Post-Matric, Top Class, or NFST, the verified document is automatically attached without requiring re-upload or repeated attestation. Note that your current certificate expires in 12 days, so renewal is recommended.",
     tags: ["Documents", "Reuse", "Wallet"],
+    studentId: "student-1", // about Priya's expiring Caste Certificate
   },
   {
     id: "q3",
