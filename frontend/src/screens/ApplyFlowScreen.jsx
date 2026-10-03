@@ -138,7 +138,7 @@ export default function ApplyFlowScreen() {
             </div>
 
             <p className="text-xs text-muted">
-              Live tracking and verification status are now active in your <span className="font-semibold text-text">Updates</span> feed.
+              You can now track this application in your <span className="font-semibold text-text">Updates</span> feed.
             </p>
 
             <div className="pt-2 space-y-2">
@@ -242,7 +242,7 @@ export default function ApplyFlowScreen() {
                   <div className="section-label">
                     2. Document Wallet Verification
                   </div>
-                  <span className="text-[10px] text-muted">Zero Re-upload</span>
+                  <span className="text-[10px] text-muted">No re-upload</span>
                 </div>
 
                 <p className="text-xs text-muted leading-relaxed">

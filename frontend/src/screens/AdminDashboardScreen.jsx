@@ -1396,14 +1396,14 @@ export default function AdminDashboardScreen() {
 
                   <div className="bg-surface p-4 rounded-card shadow-card border-0 dark:border dark:border-border/40 space-y-1">
                     <div className="text-[10.5px] font-mono uppercase tracking-wider text-muted font-bold">
-                      Instant Auto-Match Rate
+                      Auto-Match Rate
                     </div>
                     <div className="text-2xl font-bold text-text">
                       94.2%
                     </div>
                     <div className="text-[11px] text-green flex items-center gap-1 font-semibold">
                       <CheckCheck size={12} />
-                      <span>Zero officer touch required</span>
+                      <span>No officer action needed</span>
                     </div>
                   </div>
                 </div>
@@ -1481,7 +1481,7 @@ export default function AdminDashboardScreen() {
 
                     <div className="space-y-3.5 pt-2">
                       {[
-                        { label: 'Aadhaar / NPCI DBT Unseeded', percentage: 42, count: 28, color: 'bg-rust', soft: 'bg-rust-soft' },
+                        { label: 'Aadhaar–bank link not confirmed', percentage: 42, count: 28, color: 'bg-rust', soft: 'bg-rust-soft' },
                         { label: 'Expiring Income & Caste Certificate', percentage: 28, count: 19, color: 'bg-amber', soft: 'bg-amber-soft' },
                         { label: 'Bank Branch Merger / IFSC Update', percentage: 18, count: 12, color: 'bg-[#1F5A8C]', soft: 'bg-[#DCEEF9]' },
                         { label: 'Academic Attendance / Milestone Review', percentage: 12, count: 8, color: 'bg-green', soft: 'bg-green-soft' },
@@ -1573,7 +1573,7 @@ export default function AdminDashboardScreen() {
                       Central Scheme Parameter Management
                     </h1>
                     <p className="page-subtitle">
-                      Real-time eligibility rules enforced on student auto-matching engine.
+                      Edit scheme eligibility rules here. Connecting them to the Advisor is next.
                     </p>
                   </div>
                   <button

@@ -200,7 +200,7 @@ export default function ApplyModal({
               </div>
 
               <p className="text-xs text-muted">
-                You can monitor live verification stages anytime in the <span className="font-semibold text-text">Updates</span> feed.
+                You can follow each verification stage in the <span className="font-semibold text-text">Updates</span> feed.
               </p>
 
               {/* Action Buttons (Filled/Shadowed styling) */}
@@ -306,7 +306,7 @@ export default function ApplyModal({
               {currentStep === 2 && (
                 <div className="space-y-4">
                   <div className="text-xs text-muted leading-relaxed">
-                    Verified certificates from your student wallet are automatically linked with zero re-upload or physical attestations.
+                    Certificates already in your wallet are reused, so you don't upload them again.
                   </div>
 
                   <div className="space-y-2.5">
