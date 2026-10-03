@@ -340,7 +340,7 @@ export default function ApplyFlowScreen() {
                       className="w-4 h-4 mt-0.5 accent-accent rounded"
                     />
                     <span className="text-[11px] text-text">
-                      I certify that all details retrieved via DigiLocker and e-Pramaan are accurate, and I am eligible under the Ministry of Tribal Affairs guidelines.
+                      I certify that all details retrieved via DigiLocker and e-Pramaan are accurate, and I am eligible under the guidelines of the scheme I am applying to.
                     </span>
                   </label>
                 </div>

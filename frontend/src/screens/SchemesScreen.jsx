@@ -9,7 +9,7 @@ import BottomNav from '../components/BottomNav';
 import ChatSheet from '../components/ChatSheet';
 import ApplyModal from '../components/ApplyModal';
 import { Search, Check, ArrowRight, Sparkles, Ban } from 'lucide-react';
-import { conflictWith, recommendNext, bundleValue, formatINR, kindOf, componentsOf, valueOf } from '../data/schemeRules';
+import { conflictWith, recommendNext, bundleValue, formatINR, kindOf, componentsOf, valueOf, isQuantified } from '../data/schemeRules';
 
 export default function SchemesScreen() {
   const navigate = useNavigate();
@@ -45,6 +45,7 @@ export default function SchemesScreen() {
     'Top Class',
     'NFST',
     'NOS',
+    'Other',
   ];
 
   // Source-tag pill color styling (NOS Portal -> Light Blue #DCEEF9 / #1F5A8C, SFMP -> Gold #F2E8C9 / #5E4A0F, NSP -> Terracotta #FBECE8 / #9E3D24)
@@ -53,7 +54,7 @@ export default function SchemesScreen() {
     if (s.includes('NOS')) {
       return 'bg-[#DCEEF9] text-[#1F5A8C] dark:bg-[#1A334A] dark:text-[#DCEEF9]';
     }
-    if (s.includes('SFMP')) {
+    if (s.includes('SFMP') || s.includes('STATE')) {
       return 'bg-[#F2E8C9] text-[#5E4A0F] dark:bg-[#302812] dark:text-[#F2E8C9]';
     }
     // NSP terracotta-tinted
@@ -200,9 +201,9 @@ export default function SchemesScreen() {
           const steps = [
             `Reading your profile: Class ${currentStudent?.class}, ${recommendation.category} level`,
             `Checking ${recommendation.totalEligible} eligible schemes, ${recommendation.totalApplied} already applied`,
-            `Evaluating rules: one scholarship at a time, state & institutional criteria`,
+            `Evaluating rules: one scholarship at a time, school type and state criteria`,
             isDone
-              ? `Confirming maximum benefit coverage for Class ${currentStudent?.class}`
+              ? `Comparing what you hold with the other schemes you qualify for`
               : `Picking highest-value available option (${recommendation.totalAvailable} remaining)`,
           ];
 
@@ -226,7 +227,7 @@ export default function SchemesScreen() {
                   </p>
                   <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
                     {isDone
-                      ? `You're currently enrolled in ${currentBest ? nameOf(currentBest.id) : 'your scheme'} (${formatINR(recommendation.alreadyClaimed)}/yr). Run the Advisor to analyze your coverage and verify you're getting maximum benefit.`
+                      ? `You're currently enrolled in ${currentBest ? nameOf(currentBest.id) : 'your scheme'} (${formatINR(recommendation.alreadyClaimed)}/yr). Run the Advisor to compare it with every other scheme you qualify for.`
                       : recommendation.totalApplied === 0
                       ? 'The Advisor checks every scheme you qualify for, evaluates conflict rules, and tells you which one gives you the highest benefit.'
                       : `You've applied for ${recommendation.totalApplied} scheme${recommendation.totalApplied > 1 ? 's' : ''} so far (${formatINR(recommendation.alreadyClaimed)}/yr). The Advisor finds your next best option.`}
@@ -391,11 +392,15 @@ export default function SchemesScreen() {
                     </>
                   )}
 
-                  {/* SUB-CASE B: Student has applied to everything available / optimal */}
+                  {/* SUB-CASE B: nothing left to apply for. Say honestly whether the student holds the best option. */}
                   {isDone && (
                     <>
-                      <p className="text-[11px] font-mono uppercase tracking-wider text-accent-dark mt-2">
-                        Optimal Coverage Confirmed
+                      <p className="text-[11px] font-mono uppercase tracking-wider text-accent-dark mt-2" data-testid="advisor-done-label">
+                        {recommendation.better
+                          ? 'A higher-paying option exists'
+                          : recommendation.runnerUp
+                          ? 'Best option you qualify for'
+                          : 'Only scheme you qualify for'}
                       </p>
 
                       <div className="mt-1.5 rounded-lg bg-white/60 px-3 py-2.5" data-testid="advisor-optimal">
@@ -406,7 +411,7 @@ export default function SchemesScreen() {
                               {currentBest ? nameOf(currentBest.id) : 'Current Scheme'}
                             </p>
                             <span className="inline-block mt-0.5 rounded px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wider bg-green-soft text-green">
-                              Already Applied &amp; Active
+                              Already Applied
                             </span>
                           </div>
                           <span className="font-mono text-lg font-extrabold text-accent-dark flex-shrink-0">
@@ -428,22 +433,39 @@ export default function SchemesScreen() {
                         )}
                       </div>
 
-                      {/* Tradeoff intelligence */}
-                      <div className="mt-2 rounded-lg bg-white/40 px-2.5 py-2 space-y-1">
-                        {recommendation.runnerUp && (
+                      {/* Tradeoff */}
+                      <div className="mt-2 rounded-lg bg-white/40 px-2.5 py-2 space-y-1" data-testid="advisor-tradeoff">
+                        {recommendation.better ? (
+                          <>
+                            <p className="text-[11px] text-text leading-relaxed">
+                              <span className="font-semibold">{nameOf(recommendation.better.id)}</span> pays{' '}
+                              {formatINR(recommendation.better.value)}/year, which is{' '}
+                              {formatINR(recommendation.betterGain)}/year more.
+                            </p>
+                            <p className="text-[11px] text-muted leading-relaxed">
+                              You can hold only one scholarship at a time, so switching means withdrawing {nameOf(currentBest.id)}.
+                            </p>
+                          </>
+                        ) : recommendation.runnerUp ? (
+                          <>
+                            <p className="text-[11px] text-muted leading-relaxed">
+                              <span className="font-semibold text-text">Next best:</span>{' '}
+                              {nameOf(recommendation.runnerUp.id)} ({formatINR(recommendation.runnerUp.value)}/yr)
+                              {recommendation.gain > 0 && `, ${formatINR(recommendation.gain)}/year less than what you hold`}.
+                            </p>
+                            <p className="text-[11px] text-muted leading-relaxed">
+                              You can hold only one scholarship at a time, so the other schemes can't be added on top.
+                            </p>
+                          </>
+                        ) : (
                           <p className="text-[11px] text-muted leading-relaxed">
-                            <span className="font-semibold text-text">Beats next best:</span>{' '}
-                            {nameOf(recommendation.runnerUp.id)} ({formatINR(recommendation.runnerUp.value)}/yr)
-                            {recommendation.gain > 0 && ` by ${formatINR(recommendation.gain)}/year`}.
+                            No other scheme at your level matches your profile right now.
                           </p>
                         )}
-                        <p className="text-[11px] text-muted leading-relaxed">
-                          All other {recommendation.category} scholarships are mutually exclusive under the one-scholarship rule. You have maximized your annual claim.
-                        </p>
                       </div>
 
                       <div className="mt-2 flex items-baseline gap-2 border-t border-accent-dark/20 pt-2 text-xs">
-                        <span className="font-bold text-text">Total annual entitlement</span>
+                        <span className="font-bold text-text">Guideline amount</span>
                         <span className="flex-1" />
                         <span className="font-mono text-sm font-extrabold text-accent-dark">
                           {formatINR(recommendation.alreadyClaimed)}/year
@@ -451,13 +473,24 @@ export default function SchemesScreen() {
                       </div>
 
                       <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <Link
-                          to="/updates"
-                          className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform flex items-center gap-1 shadow-xs"
-                        >
-                          <span>Track in Updates</span>
-                          <ArrowRight size={13} />
-                        </Link>
+                        {recommendation.better ? (
+                          <Link
+                            to={`/scheme/${recommendation.better.id}`}
+                            className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform flex items-center gap-1 shadow-xs"
+                            data-testid="advisor-view-better"
+                          >
+                            <span>View {nameOf(recommendation.better.id)}</span>
+                            <ArrowRight size={13} />
+                          </Link>
+                        ) : (
+                          <Link
+                            to="/updates"
+                            className="h-8 px-3.5 rounded-full bg-accent text-white text-xs font-bold active:scale-95 transition-transform flex items-center gap-1 shadow-xs"
+                          >
+                            <span>Track in Updates</span>
+                            <ArrowRight size={13} />
+                          </Link>
+                        )}
                         <button
                           type="button"
                           onClick={runAdvisor}
@@ -576,9 +609,11 @@ export default function SchemesScreen() {
                 <p className="text-sm text-muted">
                   {unappliedSchemes.length === 0
                     ? "All eligible scholarships have been applied to! Track them in your Updates tab."
-                    : `No unapplied schemes found matching "${searchQuery}"`}
+                    : searchQuery.trim()
+                    ? `No unapplied schemes found matching "${searchQuery}"`
+                    : `No unapplied ${activeFilter} schemes right now.`}
                 </p>
-                {searchQuery && (
+                {(searchQuery || activeFilter !== 'All') && (
                   <button
                     type="button"
                     onClick={() => { setSearchQuery(''); setActiveFilter('All'); }}
@@ -607,7 +642,9 @@ export default function SchemesScreen() {
               </span>
               <span className="text-xs font-semibold">
                 {selectedSchemeIds.length === 1 ? '1 scheme selected' : `${selectedSchemeIds.length} schemes selected`}
-                <span className="font-normal opacity-90"> · ~{formatINR(bundleValue(selectedSchemeIds))}/yr (sample)</span>
+                {selectedSchemeIds.length > 0 && selectedSchemeIds.every(isQuantified) && (
+                  <span className="font-normal opacity-90"> · {formatINR(bundleValue(selectedSchemeIds))}/yr</span>
+                )}
               </span>
             </div>
 

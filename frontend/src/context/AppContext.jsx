@@ -93,10 +93,14 @@ export function AppProvider({ children }) {
   const [selectedSchemeIds, setSelectedSchemeIds] = useState([]);
   const [applications, setApplications] = useState(() => {
     try {
-      const saved = localStorage.getItem('adisetu_applications_v2');
+      const saved = localStorage.getItem('adisetu_applications_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        // Drop any saved application whose scheme is no longer in the catalogue (older builds had
+        // different scheme ids), so a returning browser never shows a scheme that does not exist.
+        const known = new Set(initialSchemes.map((s) => s.id));
+        const valid = Array.isArray(parsed) ? parsed.filter((a) => known.has(a.schemeId)) : [];
+        if (valid.length > 0) return valid;
       }
     } catch (e) {}
     return initialApplications;
@@ -105,7 +109,7 @@ export function AppProvider({ children }) {
   // Sync applications to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('adisetu_applications_v2', JSON.stringify(applications));
+      localStorage.setItem('adisetu_applications_v3', JSON.stringify(applications));
     } catch (e) {}
   }, [applications]);
 
@@ -203,7 +207,7 @@ export function AppProvider({ children }) {
       stageNames: ["Submitted", "Verification", "Sanctioned", "Disbursed"],
       note: null,
       tag: null,
-      amount: scheme.category === "NFST" ? "₹37,000/month" : scheme.financialAssistance?.split('+')[0] || "₹13,500/year",
+      amount: (scheme.financialAssistance || '').split('+')[0].trim(),
     };
 
     setApplications((prev) => [
@@ -262,7 +266,7 @@ export function AppProvider({ children }) {
     setApplications(initialApplications);
     clearSchemeSelection();
     try {
-      localStorage.removeItem('adisetu_applications');
+      localStorage.removeItem('adisetu_applications_v3');
     } catch (e) {}
   };
 
@@ -294,7 +298,7 @@ export function AppProvider({ children }) {
           stageNames: ["Submitted", "Verification", "Sanctioned", "Disbursed"],
           note: null,
           tag: null,
-          amount: scheme.category === "NFST" ? "₹37,000/month" : "₹13,500/year",
+          amount: (scheme.financialAssistance || '').split('+')[0].trim(),
         };
         createdApps.push(newApp);
       }

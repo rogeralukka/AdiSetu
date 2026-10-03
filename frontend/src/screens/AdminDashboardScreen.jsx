@@ -110,7 +110,7 @@ export default function AdminDashboardScreen() {
       const saved = localStorage.getItem('adisetu_admin_bookmarks');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return ['NSP2026-89211', 'SFMP-OD-2026-104', 'NSP2026-90422'];
+    return ['NSP2026-89211', 'NSP2026-73104', 'NSP2026-90422'];
   });
 
   const toggleBookmark = (id, studentName) => {
@@ -862,7 +862,7 @@ export default function AdminDashboardScreen() {
                           <option value="pm">Post-Matric (NSP)</option>
                           <option value="pre">Pre-Matric</option>
                           <option value="tc">Top Class</option>
-                          <option value="nfST">NFST Fellowship</option>
+                          <option value="nfst">NFST Fellowship</option>
                           <option value="nos">NOS Portal</option>
                         </select>
 
