@@ -53,7 +53,7 @@ export default function AadhaarResolveModal({ isOpen, onClose }) {
                 DBT Aadhaar Seeding
               </div>
               <div className="text-xs text-muted">
-                NPCI Aadhaar Mapper Verification
+                Check on NPCI's BASE portal
               </div>
             </div>
           </div>
@@ -73,10 +73,10 @@ export default function AadhaarResolveModal({ isOpen, onClose }) {
               <CheckCircle2 size={28} />
             </div>
             <div className="font-semibold text-sm text-text">
-              Aadhaar Linked Successfully!
+              Thanks for confirming
             </div>
             <div className="text-xs text-muted">
-              NPCI mapper updated. Post-Matric verification resumed.
+              Warning cleared. You can recheck on BASE anytime.
             </div>
           </div>
         ) : (
@@ -92,12 +92,12 @@ export default function AadhaarResolveModal({ isOpen, onClose }) {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">Aadhaar Status:</span>
-                <span className="font-medium text-rust">Not Active in NPCI Mapper</span>
+                <span className="font-medium text-rust">Not confirmed</span>
               </div>
             </div>
 
             <p className="text-xs text-muted leading-relaxed">
-              Direct Benefit Transfer (DBT) mandates active Aadhaar seeding with your primary bank account. Without this, scholarship sanction amounts cannot be disbursed by PFMS.
+              Scholarship money is paid only into a bank account linked to your Aadhaar. Check or fix the link on NPCI's BASE portal (npci.org.in → Consumer → BASE) or at your bank branch, then confirm here.
             </p>
 
             <div className="pt-2 grid grid-cols-2 gap-3">
@@ -114,7 +114,7 @@ export default function AadhaarResolveModal({ isOpen, onClose }) {
                 disabled={isSubmitting}
                 className="w-full py-2.5 rounded-full bg-accent text-white text-xs font-semibold hover:opacity-90 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
-                {isSubmitting ? "Linking..." : "Seed Aadhaar"}
+                {isSubmitting ? "Saving..." : "I've checked it"}
                 {!isSubmitting && <ArrowRight size={14} />}
               </button>
             </div>

@@ -93,7 +93,7 @@ export function AppProvider({ children }) {
   const [selectedSchemeIds, setSelectedSchemeIds] = useState([]);
   const [applications, setApplications] = useState(() => {
     try {
-      const saved = localStorage.getItem('adisetu_applications');
+      const saved = localStorage.getItem('adisetu_applications_v2');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -105,7 +105,7 @@ export function AppProvider({ children }) {
   // Sync applications to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('adisetu_applications', JSON.stringify(applications));
+      localStorage.setItem('adisetu_applications_v2', JSON.stringify(applications));
     } catch (e) {}
   }, [applications]);
 
@@ -464,8 +464,8 @@ export function AppProvider({ children }) {
     const newNotif = {
       id: `notif-${Date.now()}`,
       kind: "alert",
-      title: "Bank DBT Seeding Verified",
-      body: "Aadhaar successfully linked with SBI account. Verification stage resumed for Post-Matric.",
+      title: "Aadhaar–bank link confirmed",
+      body: "You confirmed your Aadhaar–bank link on NPCI's BASE portal. Post-Matric is back in progress.",
       time: "Just now",
     };
     setNotifications((prev) => [newNotif, ...prev]);

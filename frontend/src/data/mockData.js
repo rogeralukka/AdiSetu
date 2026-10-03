@@ -723,7 +723,7 @@ export const initialNotifications = [
     id: "notif-1",
     kind: "alert",
     title: "Caste Certificate expires in 12 days",
-    body: "Renew before Oct 09 to avoid verification delays in Post-Matric and NFST.",
+    body: "Renew before Oct 09 to avoid verification delays in your Post-Matric application.",
     time: "2h ago",
     relatedDocId: "doc-caste",
   },
@@ -741,7 +741,7 @@ export const cannedQuestions = [
   {
     id: "q1",
     question: "Why does my Post-Matric Scholarship say 'Action Needed'?",
-    answer: "Your application is currently paused at the Verification stage due to an Aadhaar-Bank seeding mismatch. Under Direct Benefit Transfer (DBT) guidelines, your bank account must be actively linked with your Aadhaar in the NPCI mapper. You can visit your SBI branch or use the online NPCI status check to resolve this so disbursal isn't blocked.",
+    answer: "Your Post-Matric application shows a warning: your Aadhaar–bank link for DBT isn't confirmed. Scholarship money is paid only into a bank account linked to your Aadhaar. Check or fix it on NPCI's BASE portal (npci.org.in → Consumer → BASE) or at your bank branch, then tap Resolve on the application.",
     tags: ["DBT", "Aadhaar", "Post-Matric"],
   },
   {

@@ -807,7 +807,7 @@ export default function AdminDashboardScreen() {
                         </div>
                         <div className="text-[11px] text-green flex items-center gap-1 font-medium">
                           <TrendingUp size={12} />
-                          <span>Down from 14 days on NSP</span>
+                          <span>Sample figure</span>
                         </div>
                       </div>
 
@@ -1345,10 +1345,10 @@ export default function AdminDashboardScreen() {
                 <div className="page-header">
                   <h1 className="page-title flex items-center gap-2.5">
                     <BarChart3 size={24} className="text-accent flex-shrink-0" />
-                    <span>Disbursal Velocity & Verification Throughput</span>
+                    <span>Verification Progress</span>
                   </h1>
                   <p className="page-subtitle">
-                    Live telemetry across automated DigiLocker verification, middleware handshakes, and institutional approvals.
+                    Sample figures showing how quickly discrepancies are cleared.
                   </p>
                 </div>
 
@@ -1458,7 +1458,7 @@ export default function AdminDashboardScreen() {
                     <div className="flex items-center justify-between text-[11px] text-muted px-2">
                       <span className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded bg-accent"></span>
-                        <span>Authorized DBT Disbursals</span>
+                        <span>Discrepancies cleared</span>
                       </span>
                       <span>Target: &gt;15 cases / day</span>
                     </div>
@@ -1807,7 +1807,7 @@ export default function AdminDashboardScreen() {
                 className="w-full py-3 px-3 rounded-full bg-accent text-white text-xs font-bold hover:opacity-95 active:scale-95 shadow-card transition-all flex items-center justify-center gap-1.5"
               >
                 <Check size={14} />
-                <span>Mark Resolved & Authorize DBT</span>
+                <span>Verify & Clear Discrepancy</span>
               </button>
             </div>
           </div>
@@ -1980,7 +1980,7 @@ export default function AdminDashboardScreen() {
             </div>
 
             <p className="text-xs text-muted leading-relaxed">
-              You will need to sign in again to access verification queues, resolve exceptions, and authorize DBT disbursals.
+              You will need to sign in again to access verification queues and resolve discrepancies.
             </p>
 
             <div className="pt-2 grid grid-cols-2 gap-3">

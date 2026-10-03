@@ -120,10 +120,10 @@ export default function UpdatesScreen() {
                     </div>
 
                     <h4 className="text-xs font-bold text-text mt-0.5">
-                      Aadhaar not linked to your SBI bank account
+                      Aadhaar–bank link not confirmed
                     </h4>
                     <p className="text-xs text-muted mt-0.5 leading-relaxed">
-                      Disbursal for Post-Matric Scholarship will fail under PFMS DBT mandates until Aadhaar is mapped.
+                      Scholarship money is paid only into an Aadhaar-linked bank account. Check yours on NPCI's BASE portal.
                     </p>
 
                     <button
