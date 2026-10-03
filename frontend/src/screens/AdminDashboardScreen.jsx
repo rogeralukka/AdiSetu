@@ -200,7 +200,7 @@ export default function AdminDashboardScreen() {
     );
     const target = exceptions.find((e) => e.id === excId);
     setSelectedException(null);
-    showToast(`Exception resolved: ${target ? target.studentName : 'Student'} DBT disbursal unblocked & authorized.`);
+    showToast(`Discrepancy cleared: ${target ? target.studentName : 'Student'}.`);
   };
 
   // Continuation confirm action
@@ -209,7 +209,7 @@ export default function AdminDashboardScreen() {
       prev.map((c) => (c.id === contId ? { ...c, status: 'Confirmed' } : c))
     );
     const target = continuations.find((c) => c.id === contId);
-    showToast(`Continuation sanctioned: ${target ? target.studentName : 'Student'} renewed for 2026-27.`);
+    showToast(`Renewal details verified: ${target ? target.studentName : 'Student'} for 2026-27.`);
   };
 
   // Continuation flag action
@@ -252,7 +252,7 @@ export default function AdminDashboardScreen() {
 
   // Save criteria changes action
   const handleSaveCriteria = () => {
-    showToast("Eligibility policy changes saved & synced across NSP, SFMP, and NOS middleware.");
+    showToast("Rule editing goes live in the full build.");
   };
 
   // Filtered exceptions
@@ -277,7 +277,7 @@ export default function AdminDashboardScreen() {
         statusFilter === 'ALL' || exc.status.toLowerCase() === statusFilter.toLowerCase();
 
       return matchSearch && matchScheme && matchIssue && matchStatus;
-    });
+    }).sort((a, b) => (a.issueSeverity === 'urgent' ? 0 : 1) - (b.issueSeverity === 'urgent' ? 0 : 1));
   }, [exceptions, searchQuery, schemeFilter, issueFilter, statusFilter]);
 
   // Dynamic counts
@@ -1059,7 +1059,7 @@ export default function AdminDashboardScreen() {
 
                       <div className="bg-surface p-4 rounded-card shadow-card border-0 dark:border dark:border-border/40 space-y-1">
                         <div className="text-[10.5px] font-mono uppercase tracking-wider text-muted font-bold">
-                          Auto-Approved Renewals
+                          Renewals with no issues
                         </div>
                         <div className="text-2xl font-bold text-text">
                           86
@@ -1785,7 +1785,7 @@ export default function AdminDashboardScreen() {
             <div className="p-3.5 rounded-lg bg-green-soft text-green space-y-1.5 text-xs">
               <div className="font-bold flex items-center gap-1.5">
                 <CheckCircle2 size={15} />
-                <span>DigiLocker / e-Pramaan Live Resolution</span>
+                <span>DigiLocker / e-Pramaan check</span>
               </div>
               <p className="text-[11px] leading-relaxed">
                 {selectedException.digilockerStatus}

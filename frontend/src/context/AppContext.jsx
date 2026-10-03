@@ -128,6 +128,7 @@ export function AppProvider({ children }) {
   }, [theme]);
 
   const currentStudent = students.find((s) => s.id === currentStudentId) || students[0];
+  const studentDocuments = documents.filter((d) => (d.studentId || 'student-1') === currentStudent?.id);
 
   // Translation function:
   // When Google Translate is actively translating the page for a supported language,
@@ -506,7 +507,7 @@ export function AppProvider({ children }) {
         schemes,
         selectedSchemeIds,
         applications,
-        documents,
+        documents: studentDocuments,
         notifications,
         hasUnreadUpdates,
         riskBannerDismissed,
